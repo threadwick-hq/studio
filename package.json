@@ -7,12 +7,15 @@
     "start": "node server.js",
     "serve": "node server.js",
     "test": "node test/pure.test.js",
-    "test:dom": "node test/dom.smoke.js"
+    "test:dom": "node test/dom.smoke.js",
+    "test:browser": "node test/browser.smoke.mjs",
+    "samples": "node test/render-sample.js"
   },
   "keywords": ["crochet", "granny-square", "chart", "svg", "pattern", "wysiwyg"],
   "license": "MIT",
   "private": true,
   "devDependencies": {
-    "jsdom": "^24.0.0"
+    "jsdom": "^24.0.0",
+    "puppeteer": "^25.1.0"
   }
 }

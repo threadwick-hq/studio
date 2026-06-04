@@ -110,11 +110,15 @@ server.js       zero-dependency static server
 ## Testing
 
 ```bash
-npm test          # headless tests for the pure core (no dependencies)
-npm run test:dom  # boots the app in jsdom (needs: npm install)
+npm test            # headless tests for the pure core (no dependencies)
+npm run test:dom    # boots the app in jsdom (needs: npm install)
+npm run test:browser # drives the live app in headless Chromium (place/select/
+                     # drag/undo/zoom, fails on any runtime error). Needs
+                     # `npm install` + `npx puppeteer browsers install chrome`
+                     # and a running server (`node server.js`).
 ```
 
-`test/render-sample.js` regenerates the sample artifacts in `samples/`.
+`npm run samples` regenerates the artifacts in `samples/`.
 
 ## Roadmap
 
