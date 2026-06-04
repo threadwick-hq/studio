@@ -88,7 +88,13 @@ export function initPalette(store, canvas, clusterEditor) {
     if (name) store.createMotifFromSelection(name);
   });
 
-  store.subscribe(() => { renderClusters(); renderMotifs(); });
+  store.subscribe(() => {
+    renderClusters();
+    renderMotifs();
+    // If the active placement's backing cluster/motif was deleted, fall back to dc.
+    if (activeRef.startsWith('cluster:') && !store.state.clusters.some((c) => 'cluster:' + c.id === activeRef)) choose('dc');
+    else if (activeRef.startsWith('motif:') && !store.state.motifs.some((m) => 'motif:' + m.id === activeRef)) choose('dc');
+  });
   renderClusters();
   renderMotifs();
   choose('dc');

@@ -57,21 +57,25 @@ export function initToolbar(store, canvas, exporter) {
   title.addEventListener('change', () => store.setTitle(title.value));
 
   // ---- reflect state back into controls (e.g. after load/undo) -------------
+  // Only write a control's value when it isn't the one being edited, so a
+  // reflect triggered by some other change can't clobber an in-progress edit.
+  const setVal = (el, v) => { if (document.activeElement !== el) el.value = v; };
+  const setChk = (el, v) => { if (document.activeElement !== el) el.checked = v; };
   store.subscribe((state) => {
     const sy = state.settings.symmetry;
     const sn = state.settings.snap;
     const g = state.settings.guides;
-    if (document.activeElement !== title) title.value = state.title;
-    symOrder.value = sy.order;
-    $('sym-mirror').checked = sy.mirror;
-    $('snap-mode').value = sn.mode;
-    $('snap-ring').checked = sn.ring;
-    $('snap-spoke').checked = sn.spoke;
-    $('snap-spoke-count').value = sn.spokeCount;
-    $('snap-grid-step').value = sn.gridStep;
-    $('snap-autoradial').checked = sn.autoRadial;
-    $('guide-show').checked = g.show;
-    $('guide-anchors').checked = g.showAnchors;
+    setVal(title, state.title);
+    setVal(symOrder, sy.order);
+    setChk($('sym-mirror'), sy.mirror);
+    setVal($('snap-mode'), sn.mode);
+    setChk($('snap-ring'), sn.ring);
+    setChk($('snap-spoke'), sn.spoke);
+    setVal($('snap-spoke-count'), sn.spokeCount);
+    setVal($('snap-grid-step'), sn.gridStep);
+    setChk($('snap-autoradial'), sn.autoRadial);
+    setChk($('guide-show'), g.show);
+    setChk($('guide-anchors'), g.showAnchors);
     $('btn-undo').disabled = store.undoStack.length === 0;
     $('btn-redo').disabled = store.redoStack.length === 0;
   });

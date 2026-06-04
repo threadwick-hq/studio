@@ -22,10 +22,11 @@ function defaultState() {
     clusters: [], // user-defined parametric clusters {id,name,abbr,base,legs,joinTop,joinBottom,spread}
     motifs: [], // reusable stamps {id,name,stitches:[{type,dx,dy,rot,mirror,color}]}
     stitches: [], // {id, group, type, x, y, rot, mirror, color, round}
+    groups: {}, // groupId -> the symmetry it was created with {order,mirror,axis}
   };
 }
 
-const HISTORY_KEYS = ['title', 'settings', 'rounds', 'clusters', 'motifs', 'stitches'];
+const HISTORY_KEYS = ['title', 'settings', 'rounds', 'clusters', 'motifs', 'stitches', 'groups'];
 
 class Store {
   constructor() {
@@ -132,9 +133,11 @@ class Store {
 
   // ---- stitches -----------------------------------------------------------
   // Regenerate every sibling of `seed`'s group from `seed`'s current transform.
+  // Uses the symmetry the GROUP was created with (not the live global setting),
+  // so changing the toolbar later never alters an existing group's member count.
   _regenGroup(seed) {
     if (!seed.group) return;
-    const sym = this.state.settings.symmetry;
+    const sym = this.state.groups[seed.group] || this.state.settings.symmetry;
     const orbit = symmetryOrbit(
       { x: seed.x, y: seed.y, rot: seed.rot, mirror: seed.mirror },
       sym
@@ -169,6 +172,7 @@ class Store {
         ids.push(id);
       } else {
         const group = uid('grp');
+        this.state.groups[group] = { order: sym.order, mirror: sym.mirror, axis: sym.axis };
         const orbit = symmetryOrbit({ x, y, rot, mirror }, sym);
         for (const o of orbit) {
           const id = uid('st');
@@ -225,37 +229,69 @@ class Store {
     return [...reps.values()];
   }
 
+  // After an edit regenerates groups (siblings get fresh ids), rebuild the
+  // selection to the live member ids of the affected groups so it never points
+  // at deleted siblings. `reps` are the seed stitches that were edited.
+  _reselectReps(reps) {
+    const ids = [];
+    for (const r of reps) {
+      if (r.group) for (const m of this.groupMembers(r.group)) ids.push(m.id);
+      else ids.push(r.id);
+    }
+    this.selection = new Set(ids);
+  }
+
   // Move a whole selection by a delta (grouped stitches move via one rep each).
   moveSelectionBy(dx, dy) {
     if (!this.selection.size || (dx === 0 && dy === 0)) return;
+    const reps = this._reps();
     this.transact('move', () => {
-      for (const st of this._reps()) {
+      for (const st of reps) {
         st.x += dx; st.y += dy;
         if (this.state.settings.snap.autoRadial) st.rot = radialRotation(st.x, st.y);
         this._regenGroup(st);
       }
+      this._reselectReps(reps);
     });
   }
 
   // ---- live drag (one history entry per gesture) --------------------------
+  // The snapshot is taken lazily on the first frame that actually moves
+  // something, so a click that doesn't drag leaves no no-op undo entry.
   dragBegin() {
-    this.undoStack.push(this._snapshot());
-    if (this.undoStack.length > 200) this.undoStack.shift();
-    this.redoStack.length = 0;
+    this._dragSnapped = false;
   }
-  // Move the whole selection so the lead stitch lands at (x,y). No history
-  // entry — call dragBegin() once at the start of the gesture.
+  // Move the whole selection so the lead stitch lands at (x,y). The lead always
+  // represents its own group (so its id stays valid across frames and the delta
+  // is measured against the stitch actually being dragged); every other
+  // selected group moves via one representative.
   dragSelectionTo(leadId, x, y) {
     const lead = this.byId(leadId);
     if (!lead) return;
     const dx = x - lead.x;
     const dy = y - lead.y;
     if (dx === 0 && dy === 0) return;
-    for (const st of this._reps()) {
+    if (!this._dragSnapped) {
+      this.undoStack.push(this._snapshot());
+      if (this.undoStack.length > 200) this.undoStack.shift();
+      this.redoStack.length = 0;
+      this._dragSnapped = true;
+    }
+    const keyOf = (s) => s.group || 'solo:' + s.id;
+    const seen = new Set([keyOf(lead)]);
+    const movers = [lead];
+    for (const id of this.selection) {
+      const st = this.byId(id);
+      if (!st || seen.has(keyOf(st))) continue;
+      seen.add(keyOf(st));
+      movers.push(st);
+    }
+    for (const st of movers) {
       st.x += dx; st.y += dy;
       if (this.state.settings.snap.autoRadial) st.rot = radialRotation(st.x, st.y);
       this._regenGroup(st);
     }
+    this._reselectReps(movers);
     this._rebuildClusterMap();
     this.emit();
   }
@@ -274,15 +310,19 @@ class Store {
       // rotation / mirror are geometric: set on seed, regen group.
       if (patch.rot !== undefined) st.rot = patch.rot;
       if (patch.mirror !== undefined) st.mirror = patch.mirror;
-      if (patch.rot !== undefined || patch.mirror !== undefined) this._regenGroup(st);
+      if (patch.rot !== undefined || patch.mirror !== undefined) {
+        this._regenGroup(st);
+        if (st.group) this._reselectReps([st]);
+      }
     });
   }
 
   // Apply a property patch across the whole selection in one history step.
   updateSelection(patch) {
     if (!this.selection.size) return;
+    const reps = this._reps();
     this.transact('edit', () => {
-      for (const st of this._reps()) {
+      for (const st of reps) {
         const members = st.group ? this.groupMembers(st.group) : [st];
         for (const m of members) {
           if (patch.type !== undefined) m.type = patch.type;
@@ -293,26 +333,31 @@ class Store {
         if (patch.mirror !== undefined) st.mirror = patch.mirror;
         if (patch.rot !== undefined || patch.mirror !== undefined) this._regenGroup(st);
       }
+      this._reselectReps(reps);
     });
   }
 
   orientSelectionRadial() {
     if (!this.selection.size) return;
+    const reps = this._reps();
     this.transact('orient radially', () => {
-      for (const st of this._reps()) {
+      for (const st of reps) {
         st.rot = radialRotation(st.x, st.y);
         this._regenGroup(st);
       }
+      this._reselectReps(reps);
     });
   }
 
   rotateSelectionBy(deg) {
     if (!this.selection.size) return;
+    const reps = this._reps();
     this.transact('rotate', () => {
-      for (const st of this._reps()) {
+      for (const st of reps) {
         st.rot = (st.rot || 0) + deg;
         this._regenGroup(st);
       }
+      this._reselectReps(reps);
     });
   }
 
@@ -329,6 +374,7 @@ class Store {
       this.state.stitches = this.state.stitches.filter(
         (s) => !(s.group && groups.has(s.group)) && !solo.has(s.id)
       );
+      for (const g of groups) delete this.state.groups[g];
     });
     this.selection.clear();
     this.emit();
@@ -343,6 +389,7 @@ class Store {
     if (!groups.size) return;
     this.transact('break symmetry', () => {
       for (const s of this.state.stitches) if (s.group && groups.has(s.group)) s.group = null;
+      for (const g of groups) delete this.state.groups[g];
     });
   }
 
@@ -374,22 +421,29 @@ class Store {
   }
 
   // ---- rounds -------------------------------------------------------------
+  // Labels follow the (radius-sorted) position, so they stay R1..Rn with no
+  // duplicates or gaps after add/remove.
+  _relabelRounds() {
+    this.state.rounds.sort((a, b) => a.radius - b.radius);
+    this.state.rounds.forEach((r, i) => { r.label = 'R' + (i + 1); });
+  }
   addRound(radius) {
     this.transact('add round', () => {
-      this.state.rounds.push({ id: uid('rnd'), radius, label: 'R' + (this.state.rounds.length + 1) });
-      this.state.rounds.sort((a, b) => a.radius - b.radius);
+      this.state.rounds.push({ id: uid('rnd'), radius, label: '' });
+      this._relabelRounds();
     });
   }
   updateRound(id, patch) {
     this.transact('round', () => {
       const r = this.state.rounds.find((x) => x.id === id);
       if (r) Object.assign(r, patch);
-      this.state.rounds.sort((a, b) => a.radius - b.radius);
+      this._relabelRounds();
     });
   }
   removeRound(id) {
     this.transact('remove round', () => {
       this.state.rounds = this.state.rounds.filter((r) => r.id !== id);
+      this._relabelRounds();
     });
   }
 

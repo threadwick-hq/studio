@@ -108,7 +108,7 @@ export function initCanvas(store) {
       if (e.shiftKey) store.selectGroupOf(id, true);
       else if (!store.selection.has(id)) store.selectGroupOf(id, false);
       const lead = store.byId(id);
-      drag = { leadId: id, ox: u.x - lead.x, oy: u.y - lead.y, startU: u, moved: false };
+      drag = { leadId: id, ox: u.x - lead.x, oy: u.y - lead.y, startU: u, moved: false, shift: e.shiftKey };
       svg.setPointerCapture(e.pointerId);
     } else if (!e.shiftKey) {
       store.clearSelection();
@@ -116,6 +116,14 @@ export function initCanvas(store) {
   });
 
   svg.addEventListener('pointermove', (e) => {
+    // Recover if a pointerup was missed (released off-window, capture lost):
+    // no buttons held means the gesture is over.
+    if ((drag || panning) && e.buttons === 0) {
+      drag = null;
+      panning = null;
+      try { svg.releasePointerCapture(e.pointerId); } catch {}
+      return;
+    }
     const u = toUser(e.clientX, e.clientY);
     if (panning) {
       view.panX -= (e.clientX - panning.x) / view.scale;
@@ -139,8 +147,11 @@ export function initCanvas(store) {
   });
 
   function endPointer(e) {
-    if (panning) panning = null;
-    if (drag) drag = null;
+    // A click (no drag, no shift) on a stitch that's part of a larger selection
+    // collapses the selection down to just that stitch's group.
+    if (drag && !drag.moved && !drag.shift) store.selectGroupOf(drag.leadId, false);
+    panning = null;
+    drag = null;
     try { svg.releasePointerCapture(e.pointerId); } catch {}
   }
   svg.addEventListener('pointerup', endPointer);
@@ -176,10 +187,20 @@ export function initCanvas(store) {
     applyViewBox();
   }
 
+  // Coalesce store changes into one render per frame, so a live drag (which
+  // emits on every pointermove) doesn't rebuild the whole chart repeatedly.
+  let renderQueued = false;
+  const raf = window.requestAnimationFrame ? window.requestAnimationFrame.bind(window) : (f) => setTimeout(f, 16);
+  function scheduleRender() {
+    if (renderQueued) return;
+    renderQueued = true;
+    raf(() => { renderQueued = false; render(); });
+  }
+
   const ro = new ResizeObserver(() => applyViewBox());
   ro.observe(svg);
 
-  store.subscribe(() => render());
+  store.subscribe(scheduleRender);
   render();
 
   return {

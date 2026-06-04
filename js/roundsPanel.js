@@ -74,7 +74,12 @@ export function initRoundsPanel(store, canvas) {
   }
 
   function distribute() {
+    if (!store.state.rounds.length || !roundSel.value) {
+      alert('Add a round first, then distribute a stitch around it.');
+      return;
+    }
     const radius = +roundSel.value;
+    if (!(radius > 0)) { alert('Choose a round with a positive radius.'); return; }
     const count = Math.max(1, +countInput.value | 0);
     const items = distributeRound({
       radius,
@@ -90,7 +95,11 @@ export function initRoundsPanel(store, canvas) {
     return el('label', { class: 'insp-field' }, [el('span', { class: 'insp-label', text: label }), control]);
   }
 
-  store.subscribe(() => { renderList(); refreshStitchOptions(); });
+  store.subscribe(() => {
+    // Don't tear down inputs the user is mid-edit in (focus/caret would be lost).
+    if (!listBox.contains(document.activeElement)) renderList();
+    if (document.activeElement !== stitchSel) refreshStitchOptions();
+  });
   buildForm();
   renderList();
   refreshStitchOptions();

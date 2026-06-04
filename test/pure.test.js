@@ -182,4 +182,74 @@ test('serialize / load round-trips state', () => {
   assert.equal(store.state.settings.symmetry.order, 6);
 });
 
+test('drag moves the group so the GRABBED member lands on target (regression)', () => {
+  store.reset();
+  store.setSymmetry({ order: 4, mirror: false });
+  const ids = store.addStitch({ type: 'dc', x: 60, y: 0 });
+  store.setSelection(ids);
+  const grabbed = store.state.stitches.find((s) => Math.round(s.x) === 0 && Math.round(s.y) === 60);
+  assert.ok(grabbed, 'found a non-first group member');
+  store.dragBegin();
+  store.dragSelectionTo(grabbed.id, 0, 90);
+  assert.ok(store.byId(grabbed.id), 'grabbed id still valid after a drag frame');
+  assert.deepEqual(store.state.stitches.map((s) => Math.round(Math.hypot(s.x, s.y))).sort(), [90, 90, 90, 90]);
+  store.dragSelectionTo(grabbed.id, 0, 110); // second frame must keep working
+  assert.equal(Math.round(store.byId(grabbed.id).y), 110);
+});
+
+test('editing a group uses its creation symmetry, not the live global (regression)', () => {
+  store.reset();
+  store.setSymmetry({ order: 4, mirror: false });
+  const ids = store.addStitch({ type: 'dc', x: 60, y: 0 });
+  store.setSymmetry({ order: 6, mirror: true }); // change global AFTER creation
+  store.setSelection(ids);
+  store.rotateSelectionBy(30);
+  assert.equal(store.state.stitches.length, 4, 'still 4 members, not 12');
+});
+
+test('selection has no dangling ids after a group-regenerating edit (regression)', () => {
+  store.reset();
+  store.setSymmetry({ order: 4, mirror: false });
+  const ids = store.addStitch({ type: 'dc', x: 60, y: 0 });
+  store.setSelection(ids);
+  store.rotateSelectionBy(45);
+  const live = new Set(store.state.stitches.map((s) => s.id));
+  assert.equal(store.selection.size, 4);
+  for (const id of store.selection) assert.ok(live.has(id), 'live selection id');
+});
+
+test('per-group symmetry survives serialize / load', () => {
+  store.reset();
+  store.setSymmetry({ order: 6, mirror: false });
+  store.addStitch({ type: 'dc', x: 50, y: 0 });
+  const json = JSON.parse(JSON.stringify(store.serialize()));
+  store.reset();
+  store.setSymmetry({ order: 3, mirror: false });
+  store.load(json);
+  store.setSelection(store.state.stitches.map((s) => s.id));
+  store.rotateSelectionBy(10);
+  assert.equal(store.state.stitches.length, 6, 'loaded group keeps its order 6');
+});
+
+test('round labels stay unique after remove + add (regression)', () => {
+  store.reset();
+  store.removeRound(store.state.rounds[1].id);
+  store.addRound(999);
+  const labels = store.state.rounds.map((r) => r.label);
+  assert.equal(new Set(labels).size, labels.length, 'no duplicate labels');
+});
+
+test('a no-op drag leaves no undo entry; a real drag leaves exactly one', () => {
+  store.reset();
+  store.setSymmetry({ order: 1, mirror: false });
+  const [id] = store.addStitch({ type: 'dc', x: 40, y: 0 });
+  store.setSelection([id]);
+  const before = store.undoStack.length;
+  store.dragBegin();
+  store.dragSelectionTo(id, 40, 0); // no movement
+  assert.equal(store.undoStack.length, before, 'no snapshot for a no-op drag');
+  store.dragSelectionTo(id, 70, 0); // real movement
+  assert.equal(store.undoStack.length, before + 1, 'one snapshot for the gesture');
+});
+
 console.log(`\n  ${passed} tests passed\n`);

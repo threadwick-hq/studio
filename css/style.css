@@ -136,7 +136,7 @@ body {
   font-size: 11px; color: var(--muted); background: rgba(255, 255, 255, .85);
   padding: 5px 12px; border-radius: 20px; border: 1px solid var(--line); pointer-events: none;
 }
-.stitch .hit { fill: #000; opacity: 0; pointer-events: all; }
+.stitch .hit { pointer-events: all; } /* invisibility is inline (fill:none) */
 .stitch { cursor: pointer; }
 #canvas .guides, #canvas .selection, #canvas .anchors, #canvas .cursor-layer { pointer-events: none; }
 

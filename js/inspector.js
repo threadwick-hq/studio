@@ -56,7 +56,7 @@ export function initInspector(store) {
       }));
     }
     const custom = el('input', { type: 'color', class: 'swatch-custom', title: 'Custom colour',
-      value: lead.color || '#1c1c1c', oninput: (e) => store.updateSelection({ color: e.target.value }) });
+      value: lead.color || '#1c1c1c', onchange: (e) => store.updateSelection({ color: e.target.value }) });
     swBox.appendChild(custom);
     box.appendChild(field('Colour', swBox));
 

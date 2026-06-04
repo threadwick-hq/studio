@@ -70,41 +70,90 @@ function stitchToSVG(st, clusterMap, { interactive } = {}) {
   const mirror = st.mirror ? ' scale(-1,1)' : '';
   const tf = `translate(${round(st.x)} ${round(st.y)}) rotate(${round(st.rot || 0)})${mirror}`;
   if (!interactive) return `<g transform="${tf}">${inner}</g>`;
-  // a transparent, generously sized hit target so thin symbols are easy to grab
-  const r = Math.max(12, height / 2 + 8);
-  const hit = `<circle class="hit" cx="0" cy="${round(-height / 2)}" r="${round(r)}"/>`;
+  // Self-contained invisible hit target (fill:none + pointer-events:all needs no
+  // CSS): a slim capsule along the post so dense rings of tall stitches don't
+  // overlap and steal each other's clicks.
+  const hit = height > 4
+    ? `<rect class="hit" x="-8" y="${round(-height - 6)}" width="16" height="${round(height + 12)}" rx="8" fill="none" pointer-events="all"/>`
+    : `<circle class="hit" cx="0" cy="0" r="11" fill="none" pointer-events="all"/>`;
   return `<g data-id="${st.id}" class="stitch" transform="${tf}">${hit}${inner}</g>`;
 }
 
 // ---- glyphs (palette + legend) -------------------------------------------
 
-function glyphViewBox(height) {
-  const h = Math.max(height, 16);
-  const top = -(h + 12);
-  const bottom = 12;
-  return `-19 ${round(top)} 38 ${round(bottom - top)}`;
+// A square viewBox centred on the glyph's actual geometry, so every symbol
+// (tall posts, low ovals, the magic ring) renders centred and undistorted in a
+// square palette/legend cell.
+function glyphViewBox(shapes, height) {
+  let b = shapesBBox(shapes);
+  if (b.minX > b.maxX) b = { minX: -10, minY: -Math.max(height, 12), maxX: 10, maxY: 6 };
+  const cx = (b.minX + b.maxX) / 2;
+  const cy = (b.minY + b.maxY) / 2;
+  const size = Math.max(b.maxX - b.minX, b.maxY - b.minY, 8) + 14;
+  return `${round(cx - size / 2)} ${round(cy - size / 2)} ${round(size)} ${round(size)}`;
 }
 
 export function glyphSVG(type, clusterMap, px = 42, color = INK) {
   const { shapes, height } = buildStitchShapes(type, clusterMap);
   const inner = shapes.map((s) => shapeToSVG(s, color)).join('');
-  return `<svg class="glyph" width="${px}" height="${px}" viewBox="${glyphViewBox(height)}" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
+  return `<svg class="glyph" width="${px}" height="${px}" viewBox="${glyphViewBox(shapes, height)}" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
 }
 
 // ---- bounds ---------------------------------------------------------------
 
+function expandBox(b, x, y) {
+  if (x < b.minX) b.minX = x;
+  if (y < b.minY) b.minY = y;
+  if (x > b.maxX) b.maxX = x;
+  if (y > b.maxY) b.maxY = y;
+}
+
+// Local bounding box of a shape-descriptor list, including nested rotated
+// groups (cluster legs) and curved paths (bobbles). Conservative — control
+// points of curves are included, which only over-estimates slightly.
+function shapesBBox(shapes) {
+  const b = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+  for (const s of shapes) {
+    switch (s.k) {
+      case 'line': expandBox(b, s.x1, s.y1); expandBox(b, s.x2, s.y2); break;
+      case 'ellipse': expandBox(b, s.cx - s.rx, s.cy - s.ry); expandBox(b, s.cx + s.rx, s.cy + s.ry); break;
+      case 'circle':
+      case 'dot': expandBox(b, s.cx - s.r, s.cy - s.r); expandBox(b, s.cx + s.r, s.cy + s.r); break;
+      case 'path': {
+        const nums = (s.d.match(/-?\d*\.?\d+/g) || []).map(Number);
+        for (let i = 0; i + 1 < nums.length; i += 2) expandBox(b, nums[i], nums[i + 1]);
+        break;
+      }
+      case 'group': {
+        const cb = shapesBBox(s.shapes);
+        if (cb.minX <= cb.maxX) {
+          for (const [cx, cy] of [[cb.minX, cb.minY], [cb.maxX, cb.minY], [cb.maxX, cb.maxY], [cb.minX, cb.maxY]]) {
+            const p = rotatePoint(cx, cy, s.rot || 0);
+            expandBox(b, p.x, p.y);
+          }
+        }
+        break;
+      }
+    }
+  }
+  return b;
+}
+
+// World-space bounds of a placed stitch: its true local bbox (so wide shells
+// and decreases are measured correctly), transformed by mirror + rotation.
 function stitchExtent(st, clusterMap) {
-  const { height } = buildStitchShapes(st.type, clusterMap);
-  const h = Math.max(height, 18);
-  const up = rotatePoint(0, -1, st.rot || 0); // local up after rotation
-  const tip = { x: st.x + up.x * h, y: st.y + up.y * h };
-  const pad = 12; // half-bar / oval radius slack
-  return {
-    minX: Math.min(st.x, tip.x) - pad,
-    minY: Math.min(st.y, tip.y) - pad,
-    maxX: Math.max(st.x, tip.x) + pad,
-    maxY: Math.max(st.y, tip.y) + pad,
-  };
+  const { shapes, height } = buildStitchShapes(st.type, clusterMap);
+  let lb = shapesBBox(shapes);
+  if (lb.minX > lb.maxX) lb = { minX: -8, minY: -Math.max(height, 12), maxX: 8, maxY: 6 };
+  const rot = st.rot || 0;
+  const sx = st.mirror ? -1 : 1;
+  const out = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+  for (const [cx, cy] of [[lb.minX, lb.minY], [lb.maxX, lb.minY], [lb.maxX, lb.maxY], [lb.minX, lb.maxY]]) {
+    const p = rotatePoint(cx * sx, cy, rot);
+    expandBox(out, st.x + p.x, st.y + p.y);
+  }
+  const pad = 5;
+  return { minX: out.minX - pad, minY: out.minY - pad, maxX: out.maxX + pad, maxY: out.maxY + pad };
 }
 
 export function contentBounds(stitches, clusterMap) {
@@ -200,10 +249,24 @@ function legendSVG(stitches, clusterMap, x, y, color) {
     const inner = shapes.map((s) => shapeToSVG(s, color)).join('');
     const lbl = labelFor(type, clusterMap);
     const text = lbl.abbr ? `${lbl.name} (${lbl.abbr})` : lbl.name;
-    out += `<svg x="0" y="${ry}" width="30" height="30" viewBox="${glyphViewBox(height)}">${inner}</svg>`;
+    out += `<svg x="0" y="${ry}" width="30" height="30" viewBox="${glyphViewBox(shapes, height)}">${inner}</svg>`;
     out += `<text x="40" y="${ry + 20}" font-family="system-ui,Segoe UI,Arial" font-size="14" fill="${color}">${escapeXML(text)}</text>`;
   });
   return { markup: out + '</g>', height: types.length * rowH + 12, count: types.length };
+}
+
+// Estimated pixel width of the legend block (glyph + widest label), so the
+// export viewBox can be widened to avoid clipping long labels on the right.
+function legendWidth(stitches, clusterMap) {
+  const types = usedTypes(stitches);
+  if (!types.length) return 0;
+  let maxChars = 7;
+  for (const t of types) {
+    const l = labelFor(t, clusterMap);
+    const s = l.abbr ? `${l.name} (${l.abbr})` : l.name;
+    if (s.length > maxChars) maxChars = s.length;
+  }
+  return 40 + maxChars * 7.6 + 16;
 }
 
 // ---- assembly -------------------------------------------------------------
@@ -233,6 +296,7 @@ export function chartToSVG(state, opts = {}) {
     scale = 1,
   } = opts;
 
+  const showLegend = legend && state.stitches.length > 0;
   const b = contentBounds(state.stitches, clusterMap);
   let minX = b.minX - padding;
   let minY = b.minY - padding;
@@ -242,12 +306,21 @@ export function chartToSVG(state, opts = {}) {
   const titleH = title ? 52 : 0;
   minY -= titleH;
 
+  // Widen horizontally so a long legend label or a centred title can't fall
+  // outside the viewBox and get clipped.
+  if (showLegend) maxX = Math.max(maxX, minX + padding + legendWidth(state.stitches, clusterMap));
+  if (title) {
+    const titleW = title.length * 14.5 + 24;
+    const span = maxX - minX;
+    if (titleW > span) { const g = (titleW - span) / 2; minX -= g; maxX += g; }
+  }
+
   let stitchesMarkup = '<g class="stitches">';
   for (const st of state.stitches) stitchesMarkup += stitchToSVG(st, clusterMap, { interactive: false });
   stitchesMarkup += '</g>';
 
   let legendMarkup = '';
-  if (legend && state.stitches.length) {
+  if (showLegend) {
     const lg = legendSVG(state.stitches, clusterMap, minX + padding, maxY + 28, color);
     legendMarkup = lg.markup;
     maxY += lg.height + 36;
