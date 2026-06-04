@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>stitchgrid — crochet granny-square chart editor</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><line x1='16' y1='28' x2='16' y2='6' stroke='%231c1c1c' stroke-width='3'/><line x1='9' y1='6' x2='23' y2='6' stroke='%231c1c1c' stroke-width='3'/><line x1='10' y1='20' x2='22' y2='12' stroke='%231c1c1c' stroke-width='3'/></svg>" />
+</head>
+<body>
+  <header id="topbar">
+    <div class="brand"><span class="brand-mark">✚</span> stitchgrid</div>
+    <input id="title" class="title-input" type="text" value="Untitled Granny Square" aria-label="Chart title" />
+    <div class="spacer"></div>
+    <div class="group">
+      <button id="file-new" class="btn">New</button>
+      <button id="file-open" class="btn">Open</button>
+      <button id="file-save" class="btn">Save</button>
+    </div>
+    <div class="group">
+      <button id="export-svg" class="btn">SVG</button>
+      <button id="export-png" class="btn">PNG</button>
+      <button id="export-pdf" class="btn">Print / PDF</button>
+    </div>
+  </header>
+
+  <div id="toolbar">
+    <div class="tgroup">
+      <span class="tlabel">Tool</span>
+      <button class="tool" data-tool="select" id="tool-select" title="Select / move (V)">◻ Select</button>
+      <button class="tool" data-tool="place" id="tool-place" title="Place stitch (P)">✎ Place</button>
+      <button class="tool" data-tool="pan" id="tool-pan" title="Pan (H / hold space)">✋ Pan</button>
+    </div>
+
+    <div class="tgroup">
+      <span class="tlabel">Symmetry</span>
+      <select id="sym-order" class="ctl" title="Rotational symmetry"></select>
+      <label class="chk"><input type="checkbox" id="sym-mirror" /> mirror</label>
+    </div>
+
+    <div class="tgroup">
+      <span class="tlabel">Snap</span>
+      <select id="snap-mode" class="ctl" title="Snapping mode">
+        <option value="polar">Rings + spokes</option>
+        <option value="grid">Square grid</option>
+        <option value="off">Off</option>
+      </select>
+      <label class="chk"><input type="checkbox" id="snap-ring" checked /> rings</label>
+      <label class="chk"><input type="checkbox" id="snap-spoke" checked /> spokes</label>
+      <label class="num">spokes <input type="number" id="snap-spoke-count" value="24" min="1" /></label>
+      <label class="num">grid <input type="number" id="snap-grid-step" value="24" min="2" /></label>
+      <label class="chk"><input type="checkbox" id="snap-autoradial" checked /> auto-radial</label>
+    </div>
+
+    <div class="tgroup">
+      <span class="tlabel">Guides</span>
+      <label class="chk"><input type="checkbox" id="guide-show" checked /> show</label>
+      <label class="chk"><input type="checkbox" id="guide-anchors" /> anchors</label>
+    </div>
+
+    <div class="tgroup">
+      <span class="tlabel">View</span>
+      <button id="zoom-out" class="icon-btn" title="Zoom out">−</button>
+      <button id="zoom-fit" class="btn" title="Fit to content">Fit</button>
+      <button id="zoom-in" class="icon-btn" title="Zoom in">+</button>
+    </div>
+
+    <div class="tgroup">
+      <button id="btn-undo" class="icon-btn" title="Undo (Ctrl+Z)">↶</button>
+      <button id="btn-redo" class="icon-btn" title="Redo (Ctrl+Shift+Z)">↷</button>
+    </div>
+  </div>
+
+  <main id="workspace">
+    <aside id="left" class="sidebar">
+      <section class="panel">
+        <h3>Stitches</h3>
+        <div id="palette-stitches" class="chips"></div>
+      </section>
+      <section class="panel">
+        <h3>Clusters <button id="btn-new-cluster" class="link">+ new</button></h3>
+        <div id="palette-clusters" class="chips"></div>
+      </section>
+      <section class="panel">
+        <h3>Motifs <button id="btn-create-motif" class="link">+ from selection</button></h3>
+        <div id="palette-motifs" class="chips"></div>
+      </section>
+    </aside>
+
+    <section id="canvas-wrap" data-tool="place">
+      <svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="canvas-hint">Click to place · drag to move · scroll to zoom · hold space to pan</div>
+    </section>
+
+    <aside id="right" class="sidebar">
+      <section class="panel">
+        <h3>Selection</h3>
+        <div id="inspector"></div>
+      </section>
+      <section class="panel">
+        <h3>Rounds</h3>
+        <div id="rounds-list" class="rounds"></div>
+      </section>
+      <section class="panel">
+        <h3>Distribute evenly</h3>
+        <div id="distribute-form"></div>
+      </section>
+      <section class="panel">
+        <h3>Legend</h3>
+        <div id="legend-box" class="legend"></div>
+      </section>
+    </aside>
+  </main>
+
+  <div id="modal-root"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

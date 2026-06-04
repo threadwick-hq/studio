@@ -1,0 +1,394 @@
+{
+  "version": 1,
+  "title": "Sample Granny Square",
+  "settings": {
+    "symmetry": {
+      "order": 4,
+      "mirror": false,
+      "axis": -90
+    },
+    "snap": {
+      "mode": "polar",
+      "ring": true,
+      "spoke": true,
+      "spokeCount": 24,
+      "gridStep": 24,
+      "autoRadial": true
+    },
+    "guides": {
+      "show": true,
+      "showGrid": false,
+      "showAnchors": false
+    }
+  },
+  "rounds": [
+    {
+      "id": "rnd_x6vlrho",
+      "radius": 30,
+      "label": "R1"
+    },
+    {
+      "id": "rnd_15dz0t3",
+      "radius": 64,
+      "label": "R2"
+    },
+    {
+      "id": "rnd_fkkq48i",
+      "radius": 100,
+      "label": "R3"
+    },
+    {
+      "id": "rnd_oqfdpxd",
+      "radius": 138,
+      "label": "R4"
+    },
+    {
+      "id": "rnd_tkmu7ys",
+      "radius": 178,
+      "label": "R5"
+    },
+    {
+      "id": "rnd_26ldkla",
+      "radius": 220,
+      "label": "R6"
+    }
+  ],
+  "clusters": [
+    {
+      "id": "cl_b31y16x",
+      "name": "3 dc shell",
+      "base": "dc",
+      "legs": 3,
+      "joinBottom": true,
+      "joinTop": false,
+      "spread": 52
+    }
+  ],
+  "motifs": [],
+  "stitches": [
+    {
+      "id": "st_ucaair0",
+      "group": null,
+      "type": "mr",
+      "x": 0,
+      "y": 0,
+      "rot": 0,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_0p4do3c",
+      "group": null,
+      "type": "dc",
+      "x": 2.6942229581241772e-15,
+      "y": -44,
+      "rot": 0,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_gscsxk5",
+      "group": null,
+      "type": "dc",
+      "x": 22.000000000000004,
+      "y": -38.1051177665153,
+      "rot": 30.000000000000007,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_71unpon",
+      "group": null,
+      "type": "dc",
+      "x": 38.105117766515306,
+      "y": -21.999999999999996,
+      "rot": 60.00000000000001,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_o8a8tph",
+      "group": null,
+      "type": "dc",
+      "x": 44,
+      "y": 0,
+      "rot": 90,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_36cc8to",
+      "group": null,
+      "type": "dc",
+      "x": 38.105117766515306,
+      "y": 21.999999999999996,
+      "rot": 120,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_v9ogiku",
+      "group": null,
+      "type": "dc",
+      "x": 22.000000000000004,
+      "y": 38.1051177665153,
+      "rot": 150,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_s3ps9kx",
+      "group": null,
+      "type": "dc",
+      "x": 2.6942229581241772e-15,
+      "y": 44,
+      "rot": 180,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_hfxzk9q",
+      "group": null,
+      "type": "dc",
+      "x": -21.99999999999999,
+      "y": 38.105117766515306,
+      "rot": 210,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_r6netee",
+      "group": null,
+      "type": "dc",
+      "x": -38.105117766515306,
+      "y": 21.999999999999996,
+      "rot": 240.00000000000003,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_jhechx4",
+      "group": null,
+      "type": "dc",
+      "x": -44,
+      "y": 5.3884459162483544e-15,
+      "rot": 270,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_nqqu6ld",
+      "group": null,
+      "type": "dc",
+      "x": -38.1051177665153,
+      "y": -22.000000000000004,
+      "rot": 300,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_h2f6l74",
+      "group": null,
+      "type": "dc",
+      "x": -22.00000000000002,
+      "y": -38.10511776651529,
+      "rot": 329.99999999999994,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_x4fbwe8",
+      "group": "grp_uio8qy1",
+      "type": "dc",
+      "x": -46,
+      "y": -120,
+      "rot": 0,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_n72kkcg",
+      "group": "grp_uio8qy1",
+      "type": "dc",
+      "x": 120,
+      "y": -46.00000000000001,
+      "rot": 90,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_y5tk0g1",
+      "group": "grp_uio8qy1",
+      "type": "dc",
+      "x": 46.000000000000014,
+      "y": 120,
+      "rot": 180,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_6uqvr8x",
+      "group": "grp_uio8qy1",
+      "type": "dc",
+      "x": -119.99999999999999,
+      "y": 46.00000000000002,
+      "rot": 270,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_cfggkft",
+      "group": "grp_vjy8h86",
+      "type": "dc",
+      "x": 0,
+      "y": -120,
+      "rot": 0,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_e4iphmv",
+      "group": "grp_vjy8h86",
+      "type": "dc",
+      "x": 120,
+      "y": -7.34788079488412e-15,
+      "rot": 90,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_p9raxjt",
+      "group": "grp_vjy8h86",
+      "type": "dc",
+      "x": 1.469576158976824e-14,
+      "y": 120,
+      "rot": 180,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_yv5r4lq",
+      "group": "grp_vjy8h86",
+      "type": "dc",
+      "x": -120,
+      "y": 2.2043642384652355e-14,
+      "rot": 270,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_cwi4f65",
+      "group": "grp_lxb4xi5",
+      "type": "dc",
+      "x": 46,
+      "y": -120,
+      "rot": 0,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_qgyeuy4",
+      "group": "grp_lxb4xi5",
+      "type": "dc",
+      "x": 120,
+      "y": 45.99999999999999,
+      "rot": 90,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_glxnqdb",
+      "group": "grp_lxb4xi5",
+      "type": "dc",
+      "x": -45.999999999999986,
+      "y": 120,
+      "rot": 180,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_u15ye7v",
+      "group": "grp_lxb4xi5",
+      "type": "dc",
+      "x": -120.00000000000001,
+      "y": -45.99999999999998,
+      "rot": 270,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_wepj8hu",
+      "group": "grp_6e3cn8c",
+      "type": "cl_b31y16x",
+      "x": 122,
+      "y": -122,
+      "rot": 45,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_2voc4cj",
+      "group": "grp_6e3cn8c",
+      "type": "cl_b31y16x",
+      "x": 122.00000000000001,
+      "y": 121.99999999999999,
+      "rot": 135,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_d30g11f",
+      "group": "grp_6e3cn8c",
+      "type": "cl_b31y16x",
+      "x": -121.99999999999999,
+      "y": 122.00000000000001,
+      "rot": 225,
+      "mirror": false,
+      "color": null,
+      "round": null
+    },
+    {
+      "id": "st_clcow3g",
+      "group": "grp_6e3cn8c",
+      "type": "cl_b31y16x",
+      "x": -122.00000000000003,
+      "y": -121.99999999999997,
+      "rot": 315,
+      "mirror": false,
+      "color": null,
+      "round": null
+    }
+  ],
+  "view": {
+    "scale": 1,
+    "panX": 0,
+    "panY": 0
+  }
+}
