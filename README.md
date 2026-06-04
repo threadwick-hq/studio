@@ -14,14 +14,21 @@ generated entirely by the tool; the project file is in `samples/`.)
 
 ## Quick start
 
+**Zero setup:** open [`dist/stitchgrid.html`](dist/stitchgrid.html) directly in a
+browser (double-click it). It's a self-contained bundle and runs over `file://`.
+(Opening `index.html` directly also works — it auto-forwards to that bundle.)
+
+**Dev / served:**
+
 ```bash
 node server.js        # zero-dependency static server
 # open http://localhost:8080
 ```
 
-(ES modules are blocked over `file://`, so a local http origin is needed. Any
-static server works — e.g. `python3 -m http.server` — `node server.js` just
-keeps it dependency-free.)
+The modular source (`index.html` + `js/*.js`) uses ES modules, which browsers
+block over `file://`, so the dev version needs an http origin — any static
+server works (e.g. `python3 -m http.server`); `node server.js` just keeps it
+dependency-free. Rebuild the bundle after changing source with `npm run build`.
 
 The app opens on a worked sample so you can see what a clean, symmetric square
 looks like. Your work autosaves to the browser and reloads next time; use

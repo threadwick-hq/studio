@@ -3,6 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script>
+    // ES-module scripts can't load over file:// (browsers block them by CORS).
+    // If this file was opened directly, fall back to the self-contained bundle
+    // so it still runs. When served over http(s), index.html works normally.
+    if (location.protocol === 'file:') location.replace('dist/stitchgrid.html');
+  </script>
   <title>stitchgrid — crochet granny-square chart editor</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><line x1='16' y1='28' x2='16' y2='6' stroke='%231c1c1c' stroke-width='3'/><line x1='9' y1='6' x2='23' y2='6' stroke='%231c1c1c' stroke-width='3'/><line x1='10' y1='20' x2='22' y2='12' stroke='%231c1c1c' stroke-width='3'/></svg>" />
