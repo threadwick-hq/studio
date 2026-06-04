@@ -9,12 +9,14 @@
     "test": "node test/pure.test.js",
     "test:dom": "node test/dom.smoke.js",
     "test:browser": "node test/browser.smoke.mjs",
-    "samples": "node test/render-sample.js"
+    "samples": "node test/render-sample.js",
+    "build": "node build.mjs"
   },
   "keywords": ["crochet", "granny-square", "chart", "svg", "pattern", "wysiwyg"],
   "license": "MIT",
   "private": true,
   "devDependencies": {
+    "esbuild": "^0.28.0",
     "jsdom": "^24.0.0",
     "puppeteer": "^25.1.0"
   }

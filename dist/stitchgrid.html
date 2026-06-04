@@ -1,0 +1,294 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>stitchgrid</title><style>
+:root {
+  --bg: #eef1f6;
+  --panel: #ffffff;
+  --ink: #1c2430;
+  --muted: #6b7888;
+  --line: #dbe2ec;
+  --line-soft: #eaeef4;
+  --accent: #2f7bff;
+  --accent-soft: #e8f0ff;
+  --danger: #d9453b;
+  --radius: 9px;
+  --shadow: 0 1px 2px rgba(20, 30, 50, .06), 0 6px 18px rgba(20, 30, 50, .06);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  overflow: hidden;
+  font-size: 13px;
+}
+
+/* ---- top bar ---- */
+#topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.brand { font-weight: 800; font-size: 16px; letter-spacing: -.2px; white-space: nowrap; }
+.brand-mark { color: var(--accent); }
+.title-input {
+  font-size: 14px; font-weight: 600;
+  border: 1px solid transparent; border-radius: 7px;
+  padding: 6px 10px; min-width: 220px; background: var(--line-soft); color: var(--ink);
+}
+.title-input:focus { outline: none; border-color: var(--accent); background: #fff; }
+.spacer { flex: 1; }
+.group { display: flex; gap: 4px; }
+
+/* ---- buttons ---- */
+.btn {
+  font: inherit; font-size: 12px;
+  border: 1px solid var(--line); background: #fff; color: var(--ink);
+  padding: 6px 11px; border-radius: 7px; cursor: pointer; white-space: nowrap;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { filter: brightness(1.05); color: #fff; }
+.btn.wide { display: block; width: 100%; margin-top: 6px; text-align: center; }
+.btn.danger { color: var(--danger); border-color: #f0c4c0; }
+.btn.danger:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+.icon-btn {
+  font: inherit; font-size: 15px; line-height: 1;
+  border: 1px solid var(--line); background: #fff; color: var(--ink);
+  width: 30px; height: 30px; border-radius: 7px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+.icon-btn:disabled { opacity: .35; cursor: default; }
+.link { font: inherit; font-size: 11px; border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0; }
+.link:hover { text-decoration: underline; }
+
+/* ---- toolbar ---- */
+#toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px;
+  padding: 7px 14px; background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.tgroup { display: flex; align-items: center; gap: 6px; padding-right: 10px; border-right: 1px solid var(--line-soft); }
+.tgroup:last-child { border-right: 0; }
+.tlabel { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; }
+.tool {
+  font: inherit; font-size: 12px; border: 1px solid var(--line); background: #fff;
+  padding: 6px 10px; border-radius: 7px; cursor: pointer;
+}
+.tool:hover { border-color: var(--accent); }
+.tool.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.ctl { font: inherit; font-size: 12px; padding: 5px 6px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+.chk { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ink); }
+.num { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); }
+.num input { width: 46px; font: inherit; font-size: 12px; padding: 4px 5px; border: 1px solid var(--line); border-radius: 6px; }
+
+/* ---- workspace ---- */
+#workspace { display: grid; grid-template-columns: 248px 1fr 264px; min-height: 0; }
+.sidebar { background: var(--panel); overflow-y: auto; padding: 4px 0; }
+#left { border-right: 1px solid var(--line); }
+#right { border-left: 1px solid var(--line); }
+.panel { padding: 12px 14px; border-bottom: 1px solid var(--line-soft); }
+.panel h3 {
+  margin: 0 0 9px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--muted); font-weight: 700; display: flex; align-items: center; justify-content: space-between;
+}
+.empty { color: var(--muted); font-size: 12px; margin: 2px 0; }
+.hint { color: var(--muted); font-size: 11px; margin: 8px 0 0; line-height: 1.4; }
+
+/* ---- palette chips ---- */
+.chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+#palette-clusters.chips, #palette-motifs.chips { grid-template-columns: repeat(2, 1fr); }
+.chip {
+  position: relative; border: 1px solid var(--line); border-radius: var(--radius);
+  background: #fff; cursor: pointer; padding: 6px 4px 4px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.chip:hover { border-color: var(--accent); }
+.chip.active { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.chip-glyph { display: flex; align-items: center; justify-content: center; height: 38px; }
+.chip-glyph svg { display: block; }
+.chip-label { font-size: 10px; color: var(--muted); text-align: center; line-height: 1.1; }
+.chip-x, .chip-edit {
+  position: absolute; top: 2px; width: 16px; height: 16px; border-radius: 50%;
+  font-size: 11px; line-height: 16px; text-align: center; color: var(--muted);
+  background: var(--line-soft); display: none;
+}
+.chip-x { right: 2px; }
+.chip-edit { left: 2px; }
+.chip:hover .chip-x, .chip:hover .chip-edit { display: block; }
+.chip-x:hover { background: var(--danger); color: #fff; }
+.chip-edit:hover { background: var(--accent); color: #fff; }
+
+/* ---- canvas ---- */
+#canvas-wrap { position: relative; background:
+    radial-gradient(circle at center, #ffffff 0, #f7f9fc 70%, #eef1f6 100%); overflow: hidden; }
+#canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+#canvas-wrap[data-tool="place"] #canvas { cursor: crosshair; }
+#canvas-wrap[data-tool="select"] #canvas { cursor: default; }
+#canvas-wrap[data-tool="pan"] #canvas { cursor: grab; }
+.canvas-hint {
+  position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%);
+  font-size: 11px; color: var(--muted); background: rgba(255, 255, 255, .85);
+  padding: 5px 12px; border-radius: 20px; border: 1px solid var(--line); pointer-events: none;
+}
+.stitch .hit { pointer-events: all; } /* invisibility is inline (fill:none) */
+.stitch { cursor: pointer; }
+#canvas .guides, #canvas .selection, #canvas .anchors, #canvas .cursor-layer { pointer-events: none; }
+
+/* ---- inspector ---- */
+.insp-summary { font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 8px; }
+.insp-field { display: grid; grid-template-columns: 78px 1fr; align-items: center; gap: 8px; margin-bottom: 8px; }
+.insp-label { font-size: 11px; color: var(--muted); }
+.field { font: inherit; font-size: 12px; padding: 5px 7px; border: 1px solid var(--line); border-radius: 6px; background: #fff; width: 100%; }
+.btn-row { display: flex; align-items: center; gap: 6px; }
+.rot-readout { font-size: 12px; color: var(--muted); min-width: 34px; text-align: center; }
+.swatches { display: flex; flex-wrap: wrap; gap: 4px; }
+.swatch { width: 20px; height: 20px; border-radius: 5px; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--line); cursor: pointer; padding: 0; }
+.swatch.active { box-shadow: 0 0 0 2px var(--accent); }
+.swatch-custom { width: 24px; height: 24px; padding: 0; border: 1px solid var(--line); border-radius: 5px; background: #fff; cursor: pointer; }
+
+/* ---- rounds ---- */
+.round-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.round-row.add { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.round-label { font-size: 12px; color: var(--muted); width: 26px; }
+.mini { width: 64px; font: inherit; font-size: 12px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; }
+
+/* ---- legend ---- */
+.legend-row { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 4px; }
+.legend-glyph { width: 30px; display: flex; justify-content: center; }
+.legend-glyph svg { display: block; }
+
+/* ---- modal ---- */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(20, 30, 50, .4);
+  display: flex; align-items: center; justify-content: center; z-index: 50;
+}
+.modal { background: #fff; border-radius: 12px; box-shadow: var(--shadow); width: min(560px, 92vw); max-height: 90vh; overflow: auto; }
+.modal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.modal-head h2 { margin: 0; font-size: 16px; }
+.modal-body { padding: 18px; }
+.modal-footer { padding: 12px 18px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 8px; }
+
+.cluster-editor { display: grid; grid-template-columns: 150px 1fr; gap: 18px; }
+.cluster-preview {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--line-soft); border-radius: 10px; min-height: 150px;
+}
+.cluster-fields .insp-field { grid-template-columns: 120px 1fr; }
+
+</style></head><body>
+<header id="topbar">
+    <div class="brand"><span class="brand-mark">✚</span> stitchgrid</div>
+    <input id="title" class="title-input" type="text" value="Untitled Granny Square" aria-label="Chart title" />
+    <div class="spacer"></div>
+    <div class="group">
+      <button id="file-new" class="btn">New</button>
+      <button id="file-open" class="btn">Open</button>
+      <button id="file-save" class="btn">Save</button>
+    </div>
+    <div class="group">
+      <button id="export-svg" class="btn">SVG</button>
+      <button id="export-png" class="btn">PNG</button>
+      <button id="export-pdf" class="btn">Print / PDF</button>
+    </div>
+  </header>
+
+  <div id="toolbar">
+    <div class="tgroup">
+      <span class="tlabel">Tool</span>
+      <button class="tool" data-tool="select" id="tool-select" title="Select / move (V)">◻ Select</button>
+      <button class="tool" data-tool="place" id="tool-place" title="Place stitch (P)">✎ Place</button>
+      <button class="tool" data-tool="pan" id="tool-pan" title="Pan (H / hold space)">✋ Pan</button>
+    </div>
+
+    <div class="tgroup">
+      <span class="tlabel">Symmetry</span>
+      <select id="sym-order" class="ctl" title="Rotational symmetry"></select>
+      <label class="chk"><input type="checkbox" id="sym-mirror" /> mirror</label>
+    </div>
+
+    <div class="tgroup">
+      <span class="tlabel">Snap</span>
+      <select id="snap-mode" class="ctl" title="Snapping mode">
+        <option value="polar">Rings + spokes</option>
+        <option value="grid">Square grid</option>
+        <option value="off">Off</option>
+      </select>
+      <label class="chk"><input type="checkbox" id="snap-ring" checked /> rings</label>
+      <label class="chk"><input type="checkbox" id="snap-spoke" checked /> spokes</label>
+      <label class="num">spokes <input type="number" id="snap-spoke-count" value="24" min="1" /></label>
+      <label class="num">grid <input type="number" id="snap-grid-step" value="24" min="2" /></label>
+      <label class="chk"><input type="checkbox" id="snap-autoradial" checked /> auto-radial</label>
+    </div>
+
+    <div class="tgroup">
+      <span class="tlabel">Guides</span>
+      <label class="chk"><input type="checkbox" id="guide-show" checked /> show</label>
+      <label class="chk"><input type="checkbox" id="guide-anchors" /> anchors</label>
+    </div>
+
+    <div class="tgroup">
+      <span class="tlabel">View</span>
+      <button id="zoom-out" class="icon-btn" title="Zoom out">−</button>
+      <button id="zoom-fit" class="btn" title="Fit to content">Fit</button>
+      <button id="zoom-in" class="icon-btn" title="Zoom in">+</button>
+    </div>
+
+    <div class="tgroup">
+      <button id="btn-undo" class="icon-btn" title="Undo (Ctrl+Z)">↶</button>
+      <button id="btn-redo" class="icon-btn" title="Redo (Ctrl+Shift+Z)">↷</button>
+    </div>
+  </div>
+
+  <main id="workspace">
+    <aside id="left" class="sidebar">
+      <section class="panel">
+        <h3>Stitches</h3>
+        <div id="palette-stitches" class="chips"></div>
+      </section>
+      <section class="panel">
+        <h3>Clusters <button id="btn-new-cluster" class="link">+ new</button></h3>
+        <div id="palette-clusters" class="chips"></div>
+      </section>
+      <section class="panel">
+        <h3>Motifs <button id="btn-create-motif" class="link">+ from selection</button></h3>
+        <div id="palette-motifs" class="chips"></div>
+      </section>
+    </aside>
+
+    <section id="canvas-wrap" data-tool="place">
+      <svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="canvas-hint">Click to place · drag to move · scroll to zoom · hold space to pan</div>
+    </section>
+
+    <aside id="right" class="sidebar">
+      <section class="panel">
+        <h3>Selection</h3>
+        <div id="inspector"></div>
+      </section>
+      <section class="panel">
+        <h3>Rounds</h3>
+        <div id="rounds-list" class="rounds"></div>
+      </section>
+      <section class="panel">
+        <h3>Distribute evenly</h3>
+        <div id="distribute-form"></div>
+      </section>
+      <section class="panel">
+        <h3>Legend</h3>
+        <div id="legend-box" class="legend"></div>
+      </section>
+    </aside>
+  </main>
+
+  <div id="modal-root"></div>
+<script>
+(()=>{function T(e="id"){return e+"_"+Math.random().toString(36).slice(2,9)}function N(e,t,n){return e<t?t:e>n?n:e}function Y(e){return typeof structuredClone=="function"?structuredClone(e):JSON.parse(JSON.stringify(e))}function b(e,t=2){let n=10**t;return Math.round(e*n)/n}function Q(e){return String(e).replace(/[<>&"']/g,t=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;","'":"&#39;"})[t])}var ee=Math.PI*2,lt=e=>e*Math.PI/180,dt=e=>e*180/Math.PI;function ut(e,t){return{r:Math.hypot(e,t),a:dt(Math.atan2(t,e))}}function U(e,t){let n=lt(t);return{x:e*Math.cos(n),y:e*Math.sin(n)}}function tt(e){return e%=360,e<0?e+360:e}function j(e,t){return e===0&&t===0?0:tt(dt(Math.atan2(t,e))+90)}function O(e,t,n){let o=lt(n),s=Math.cos(o),i=Math.sin(o);return{x:e*s-t*i,y:e*i+t*s}}function pt(e,t,n){let{r:o,a:s}=ut(e,t);return U(o,2*n-s)}function Z(e,t,n=0){return t?Math.round((e-n)/t)*t+n:e}function ht(e,t,n={}){let{rings:o,spokeStep:s,spokeOffset:i=0,snapRing:c=!0,snapSpoke:a=!0}=n,{r:l,a:u}=ut(e,t);if(c&&o&&o.length){let r=o[0],h=Math.abs(l-o[0]);for(let d of o){let f=Math.abs(l-d);f<h&&(h=f,r=d)}l=r}return a&&s&&(u=Z(u,s,i)),U(l,u)}function ft(e,t,n,o=0){return{x:Z(e,n,o),y:Z(t,n,o)}}var mt=[1,2,3,4,5,6,8,12];function et(e,t){let n=Math.max(1,t.order|0),o=360/n,s=t.axis??-90,i=e.rot||0,c=[{x:e.x,y:e.y,rot:i,mirror:!!e.mirror}];if(t.mirror){let l=pt(e.x,e.y,s);c.push({x:l.x,y:l.y,rot:2*s-i,mirror:!e.mirror})}let a=[];for(let l of c)for(let u=0;u<n;u++){let r=O(l.x,l.y,u*o);a.push({x:r.x,y:r.y,rot:tt(l.rot+u*o),mirror:l.mirror})}return a}function gt(){return[30,64,100,138,178,220].map((e,t)=>({id:T("rnd"),radius:e,label:"R"+(t+1)}))}function H(e){return e.map(t=>t.radius).sort((t,n)=>t-n)}function V(e){let{radius:t,count:n,sequence:o=["dc"],startAngle:s=-90,orient:i="radial",color:c=null,round:a=null}=e,l=[],u=360/n;for(let r=0;r<n;r++){let h=s+r*u,d=U(t,h),f=o[r%o.length];l.push({type:f,x:d.x,y:d.y,rot:i==="radial"?j(d.x,d.y):0,color:c,round:a})}return l}function nt(){return{title:"Untitled Granny Square",settings:{symmetry:{order:4,mirror:!1,axis:-90},snap:{mode:"polar",ring:!0,spoke:!0,spokeCount:24,gridStep:24,autoRadial:!0},guides:{show:!0,showGrid:!1,showAnchors:!1}},view:{scale:1,panX:0,panY:0},rounds:gt(),clusters:[],motifs:[],stitches:[],groups:{}}}var F=["title","settings","rounds","clusters","motifs","stitches","groups"],ot=class{constructor(){this.state=nt(),this.selection=new Set,this.listeners=new Set,this.undoStack=[],this.redoStack=[],this._rebuildClusterMap()}subscribe(t){return this.listeners.add(t),()=>this.listeners.delete(t)}emit(){for(let t of this.listeners)t(this.state,this.selection)}_snapshot(){let t={};for(let n of F)t[n]=Y(this.state[n]);return t}_restore(t){for(let n of F)this.state[n]=Y(t[n]);this._rebuildClusterMap(),this._pruneSelection()}transact(t,n){this.undoStack.push(this._snapshot()),this.undoStack.length>200&&this.undoStack.shift(),this.redoStack.length=0,n(),this._rebuildClusterMap(),this.emit()}undo(){this.undoStack.length&&(this.redoStack.push(this._snapshot()),this._restore(this.undoStack.pop()),this.emit())}redo(){this.redoStack.length&&(this.undoStack.push(this._snapshot()),this._restore(this.redoStack.pop()),this.emit())}_rebuildClusterMap(){let t={};for(let n of this.state.clusters)t[n.id]=n;this.state.clusterMap=t}_pruneSelection(){let t=new Set(this.state.stitches.map(n=>n.id));for(let n of[...this.selection])t.has(n)||this.selection.delete(n)}byId(t){return this.state.stitches.find(n=>n.id===t)}groupMembers(t){return t?this.state.stitches.filter(n=>n.group===t):[]}setTitle(t){this.transact("title",()=>{this.state.title=t})}setSymmetry(t){this.transact("symmetry",()=>{Object.assign(this.state.settings.symmetry,t)})}setSnap(t){Object.assign(this.state.settings.snap,t),this.emit()}setGuides(t){Object.assign(this.state.settings.guides,t),this.emit()}snapPoint(t,n){let o=this.state.settings.snap;return o.mode==="grid"?ft(t,n,o.gridStep):o.mode==="polar"&&(o.ring||o.spoke)?ht(t,n,{rings:H(this.state.rounds),spokeStep:o.spokeCount?360/o.spokeCount:0,snapRing:o.ring,snapSpoke:o.spoke}):{x:t,y:n}}defaultRotFor(t,n){return this.state.settings.snap.autoRadial?j(t,n):0}_regenGroup(t){if(!t.group)return;let n=this.state.groups[t.group]||this.state.settings.symmetry,o=et({x:t.x,y:t.y,rot:t.rot,mirror:t.mirror},n);this.state.stitches=this.state.stitches.filter(s=>s.group!==t.group||s.id===t.id);for(let s=1;s<o.length;s++){let i=o[s];this.state.stitches.push({id:T("st"),group:t.group,type:t.type,color:t.color,round:t.round,x:i.x,y:i.y,rot:i.rot,mirror:i.mirror})}}addStitch(t,{symmetry:n=!0,select:o=!0}={}){let{type:s,x:i,y:c}=t,a=t.rot??this.defaultRotFor(i,c),l=!!t.mirror,u=t.color??null,r=t.round??null,h=this.state.settings.symmetry,d=n&&(h.order>1||h.mirror),f=[];return this.transact("add stitch",()=>{if(d){let g=T("grp");this.state.groups[g]={order:h.order,mirror:h.mirror,axis:h.axis};let k=et({x:i,y:c,rot:a,mirror:l},h);for(let m of k){let x=T("st");this.state.stitches.push({id:x,group:g,type:s,x:m.x,y:m.y,rot:m.rot,mirror:m.mirror,color:u,round:r}),f.push(x)}}else{let g=T("st");this.state.stitches.push({id:g,group:null,type:s,x:i,y:c,rot:a,mirror:l,color:u,round:r}),f.push(g)}}),o&&this.setSelection(f),f}addStitchesRaw(t,{select:n=!0}={}){let o=[];return this.transact("add stitches",()=>{for(let s of t){let i=T("st");this.state.stitches.push({id:i,group:null,type:s.type,x:s.x,y:s.y,rot:s.rot??this.defaultRotFor(s.x,s.y),mirror:!!s.mirror,color:s.color??null,round:s.round??null}),o.push(i)}}),n&&this.setSelection(o),o}setStitchPos(t,n,o){let s=this.byId(t);s&&(this.transact("move",()=>{s.x=n,s.y=o,this.state.settings.snap.autoRadial&&(s.rot=j(n,o)),this._regenGroup(s)}),s.group&&this.setSelection(this.groupMembers(s.group).map(i=>i.id)))}_reps(){let t=new Map;for(let n of this.selection){let o=this.byId(n);if(!o)continue;let s=o.group||"solo:"+o.id;t.has(s)||t.set(s,o)}return[...t.values()]}_reselectReps(t){let n=[];for(let o of t)if(o.group)for(let s of this.groupMembers(o.group))n.push(s.id);else n.push(o.id);this.selection=new Set(n)}moveSelectionBy(t,n){if(!this.selection.size||t===0&&n===0)return;let o=this._reps();this.transact("move",()=>{for(let s of o)s.x+=t,s.y+=n,this.state.settings.snap.autoRadial&&(s.rot=j(s.x,s.y)),this._regenGroup(s);this._reselectReps(o)})}dragBegin(){this._dragSnapped=!1}dragSelectionTo(t,n,o){let s=this.byId(t);if(!s)return;let i=n-s.x,c=o-s.y;if(i===0&&c===0)return;this._dragSnapped||(this.undoStack.push(this._snapshot()),this.undoStack.length>200&&this.undoStack.shift(),this.redoStack.length=0,this._dragSnapped=!0);let a=r=>r.group||"solo:"+r.id,l=new Set([a(s)]),u=[s];for(let r of this.selection){let h=this.byId(r);!h||l.has(a(h))||(l.add(a(h)),u.push(h))}for(let r of u)r.x+=i,r.y+=c,this.state.settings.snap.autoRadial&&(r.rot=j(r.x,r.y)),this._regenGroup(r);this._reselectReps(u),this._rebuildClusterMap(),this.emit()}updateStitch(t,n){let o=this.byId(t);o&&this.transact("edit",()=>{let s=o.group?this.groupMembers(o.group):[o];for(let i of s)n.type!==void 0&&(i.type=n.type),n.color!==void 0&&(i.color=n.color),n.round!==void 0&&(i.round=n.round);n.rot!==void 0&&(o.rot=n.rot),n.mirror!==void 0&&(o.mirror=n.mirror),(n.rot!==void 0||n.mirror!==void 0)&&(this._regenGroup(o),o.group&&this._reselectReps([o]))})}updateSelection(t){if(!this.selection.size)return;let n=this._reps();this.transact("edit",()=>{for(let o of n){let s=o.group?this.groupMembers(o.group):[o];for(let i of s)t.type!==void 0&&(i.type=t.type),t.color!==void 0&&(i.color=t.color),t.round!==void 0&&(i.round=t.round);t.rot!==void 0&&(o.rot=t.rot),t.mirror!==void 0&&(o.mirror=t.mirror),(t.rot!==void 0||t.mirror!==void 0)&&this._regenGroup(o)}this._reselectReps(n)})}orientSelectionRadial(){if(!this.selection.size)return;let t=this._reps();this.transact("orient radially",()=>{for(let n of t)n.rot=j(n.x,n.y),this._regenGroup(n);this._reselectReps(t)})}rotateSelectionBy(t){if(!this.selection.size)return;let n=this._reps();this.transact("rotate",()=>{for(let o of n)o.rot=(o.rot||0)+t,this._regenGroup(o);this._reselectReps(n)})}deleteSelection(){if(!this.selection.size)return;let t=new Set,n=new Set;for(let o of this.selection){let s=this.byId(o);s&&(s.group?t.add(s.group):n.add(o))}this.transact("delete",()=>{this.state.stitches=this.state.stitches.filter(o=>!(o.group&&t.has(o.group))&&!n.has(o.id));for(let o of t)delete this.state.groups[o]}),this.selection.clear(),this.emit()}breakSymmetry(){let t=new Set;for(let n of this.selection){let o=this.byId(n);o&&o.group&&t.add(o.group)}t.size&&this.transact("break symmetry",()=>{for(let n of this.state.stitches)n.group&&t.has(n.group)&&(n.group=null);for(let n of t)delete this.state.groups[n]})}setSelection(t){this.selection=new Set(t),this.emit()}toggleSelection(t,n){n?this.selection.has(t)?this.selection.delete(t):this.selection.add(t):this.selection=new Set([t]),this.emit()}selectGroupOf(t,n=!1){let o=this.byId(t);if(!o)return;let s=o.group?this.groupMembers(o.group).map(i=>i.id):[t];if(n)for(let i of s)this.selection.add(i);else this.selection=new Set(s);this.emit()}clearSelection(){this.selection.size&&(this.selection.clear(),this.emit())}_relabelRounds(){this.state.rounds.sort((t,n)=>t.radius-n.radius),this.state.rounds.forEach((t,n)=>{t.label="R"+(n+1)})}addRound(t){this.transact("add round",()=>{this.state.rounds.push({id:T("rnd"),radius:t,label:""}),this._relabelRounds()})}updateRound(t,n){this.transact("round",()=>{let o=this.state.rounds.find(s=>s.id===t);o&&Object.assign(o,n),this._relabelRounds()})}removeRound(t){this.transact("remove round",()=>{this.state.rounds=this.state.rounds.filter(n=>n.id!==t),this._relabelRounds()})}addCluster(t){let n=T("cl");return this.transact("add cluster",()=>{this.state.clusters.push({id:n,...t})}),n}updateCluster(t,n){this.transact("cluster",()=>{let o=this.state.clusters.find(s=>s.id===t);o&&Object.assign(o,n)})}removeCluster(t){this.transact("remove cluster",()=>{this.state.clusters=this.state.clusters.filter(n=>n.id!==t)})}createMotifFromSelection(t){let n=[...this.selection].map(a=>this.byId(a)).filter(Boolean);if(n.length<2)return null;let o=n.reduce((a,l)=>a+l.x,0)/n.length,s=n.reduce((a,l)=>a+l.y,0)/n.length,i=T("mo"),c=n.map(a=>({type:a.type,dx:a.x-o,dy:a.y-s,rot:a.rot,mirror:a.mirror,color:a.color}));return this.transact("create motif",()=>{this.state.motifs.push({id:i,name:t||"Motif "+(this.state.motifs.length+1),stitches:c})}),i}placeMotif(t,n,o){let s=this.state.motifs.find(i=>i.id===t);return s?this.addStitchesRaw(s.stitches.map(i=>({type:i.type,x:n+i.dx,y:o+i.dy,rot:i.rot,mirror:i.mirror,color:i.color}))):[]}removeMotif(t){this.transact("remove motif",()=>{this.state.motifs=this.state.motifs.filter(n=>n.id!==t)})}serialize(){let t={version:1};for(let n of F)t[n]=Y(this.state[n]);return t.view=Y(this.state.view),t}load(t){let n=nt();for(let o of F)t[o]!==void 0&&(n[o]=Y(t[o]));t.view&&(n.view=Y(t.view)),this.state=n,this.selection.clear(),this.undoStack.length=0,this.redoStack.length=0,this._rebuildClusterMap(),this.emit()}reset(){this.load(nt())}clearHistory(){this.undoStack.length=0,this.redoStack.length=0}},v=new ot;var yt={sc:0,hdc:0,dc:1,tr:2,dtr:3};function G(e,t=0,{topBar:n=!0}={}){let o=[{k:"line",x1:0,y1:0,x2:0,y2:-e}];n&&o.push({k:"line",x1:-15/2,y1:-e,x2:15/2,y2:-e});for(let s=0;s<t;s++){let i=t===1?.6:.46+s/(t-1)*.32,c=-e*i;o.push({k:"line",x1:-6.5,y1:c+5,x2:6.5,y2:c-5})}return o}var $={ch:{name:"Chain",abbr:"ch",category:"basic",build:()=>({shapes:[{k:"ellipse",cx:0,cy:0,rx:9.5,ry:4.6}],height:0})},slst:{name:"Slip stitch",abbr:"sl st",category:"basic",build:()=>({shapes:[{k:"dot",cx:0,cy:0,r:3.4}],height:0})},sc:{name:"Single crochet",abbr:"sc",category:"basic",build:()=>({shapes:[{k:"line",x1:0,y1:0,x2:0,y2:-16},{k:"line",x1:-7.5,y1:-16/2,x2:7.5,y2:-16/2}],height:16})},hdc:{name:"Half double crochet",abbr:"hdc",category:"basic",build:()=>({shapes:G(23,0),height:23})},dc:{name:"Double crochet",abbr:"dc",category:"basic",build:()=>({shapes:G(32,1),height:32})},tr:{name:"Treble crochet",abbr:"tr",category:"basic",build:()=>({shapes:G(40,2),height:40})},dtr:{name:"Double treble",abbr:"dtr",category:"basic",build:()=>({shapes:G(48,3),height:48})},mr:{name:"Magic ring",abbr:"ring",category:"special",build:()=>({shapes:[{k:"circle",cx:0,cy:0,r:15}],height:0})}},A=["ch","slst","sc","hdc","dc","tr","dtr","mr"];function xt(e={}){let{base:t="dc",legs:n=3,joinTop:o=!1,joinBottom:s=!0,spread:i=48}=e,c=($[t]||$.dc).build(),a=e.height||c.height||32,l=yt[t]??1,u=[];if(s&&o){let r=5+n*2.4;for(let h=0;h<n;h++){let f=(n===1?0:h/(n-1)*2-1)*r;u.push({k:"path",d:`M 0 0 Q ${f} ${-a/2} 0 ${-a}`})}u.push({k:"line",x1:-6,y1:-a,x2:6,y2:-a})}else if(o){let r=8+n*8;for(let h=0;h<n;h++){let d=n===1?0:-r/2+h*(r/(n-1));u.push({k:"line",x1:d,y1:0,x2:0,y2:-a});for(let f=0;f<l;f++){let g=.58+f*.16,k=d*(1-g),m=-a*g;u.push({k:"line",x1:k-6,y1:m+5,x2:k+6,y2:m-5})}}}else{let r=G(a,l);for(let h=0;h<n;h++){let d=n===1?0:-i/2+h*(i/(n-1));u.push({k:"group",rot:d,shapes:r})}}return{shapes:u,height:a}}var st=[{name:"2 dc in 1 (V)",base:"dc",legs:2,joinBottom:!0,joinTop:!1,spread:34},{name:"3 dc in 1 (shell)",base:"dc",legs:3,joinBottom:!0,joinTop:!1,spread:50},{name:"5 dc shell",base:"dc",legs:5,joinBottom:!0,joinTop:!1,spread:92},{name:"3 dc cluster (bobble)",base:"dc",legs:3,joinBottom:!0,joinTop:!0},{name:"5 dc popcorn",base:"dc",legs:5,joinBottom:!0,joinTop:!0},{name:"3 dc together",base:"dc",legs:3,joinBottom:!1,joinTop:!0},{name:"2 dc together",base:"dc",legs:2,joinBottom:!1,joinTop:!0},{name:"3 tr cluster",base:"tr",legs:3,joinBottom:!0,joinTop:!0}];var q="#1c1c1c",Gt=2.4;function D(e,t){let n=`stroke="${t}" stroke-width="${Gt}" stroke-linecap="round" fill="none"`;switch(e.k){case"line":return`<line x1="${b(e.x1)}" y1="${b(e.y1)}" x2="${b(e.x2)}" y2="${b(e.y2)}" ${n}/>`;case"ellipse":return`<ellipse cx="${b(e.cx)}" cy="${b(e.cy)}" rx="${b(e.rx)}" ry="${b(e.ry)}" ${n}/>`;case"circle":return`<circle cx="${b(e.cx)}" cy="${b(e.cy)}" r="${b(e.r)}" ${n}/>`;case"dot":return`<circle cx="${b(e.cx)}" cy="${b(e.cy)}" r="${b(e.r)}" fill="${t}"/>`;case"path":return e.fill?`<path d="${e.d}" fill="${t}"/>`:`<path d="${e.d}" ${n}/>`;case"group":return`<g transform="rotate(${b(e.rot)})">${e.shapes.map(o=>D(o,t)).join("")}</g>`;default:return""}}function bt(e,t=q){return e.map(n=>D(n,t)).join("")}function z(e,t){if($[e])return $[e].build();let n=t&&t[e];return n?xt(n):$.dc.build()}function K(e,t){if($[e]){let o=$[e];return{name:o.name,abbr:o.abbr}}let n=t&&t[e];return n?{name:n.name||"Custom cluster",abbr:n.abbr||""}:{name:e,abbr:""}}function St(e,t,{interactive:n}={}){let{shapes:o,height:s}=z(e.type,t),i=e.color||q,c=o.map(r=>D(r,i)).join(""),a=e.mirror?" scale(-1,1)":"",l=`translate(${b(e.x)} ${b(e.y)}) rotate(${b(e.rot||0)})${a}`;if(!n)return`<g transform="${l}">${c}</g>`;let u=s>4?`<rect class="hit" x="-8" y="${b(-s-6)}" width="16" height="${b(s+12)}" rx="8" fill="none" pointer-events="all"/>`:'<circle class="hit" cx="0" cy="0" r="11" fill="none" pointer-events="all"/>';return`<g data-id="${e.id}" class="stitch" transform="${l}">${u}${c}</g>`}function vt(e,t){let n=it(e);n.minX>n.maxX&&(n={minX:-10,minY:-Math.max(t,12),maxX:10,maxY:6});let o=(n.minX+n.maxX)/2,s=(n.minY+n.maxY)/2,i=Math.max(n.maxX-n.minX,n.maxY-n.minY,8)+14;return`${b(o-i/2)} ${b(s-i/2)} ${b(i)} ${b(i)}`}function X(e,t,n=42,o=q){let{shapes:s,height:i}=z(e,t),c=s.map(a=>D(a,o)).join("");return`<svg class="glyph" width="${n}" height="${n}" viewBox="${vt(s,i)}" xmlns="http://www.w3.org/2000/svg">${c}</svg>`}function B(e,t,n){t<e.minX&&(e.minX=t),n<e.minY&&(e.minY=n),t>e.maxX&&(e.maxX=t),n>e.maxY&&(e.maxY=n)}function it(e){let t={minX:1/0,minY:1/0,maxX:-1/0,maxY:-1/0};for(let n of e)switch(n.k){case"line":B(t,n.x1,n.y1),B(t,n.x2,n.y2);break;case"ellipse":B(t,n.cx-n.rx,n.cy-n.ry),B(t,n.cx+n.rx,n.cy+n.ry);break;case"circle":case"dot":B(t,n.cx-n.r,n.cy-n.r),B(t,n.cx+n.r,n.cy+n.r);break;case"path":{let o=(n.d.match(/-?\d*\.?\d+/g)||[]).map(Number);for(let s=0;s+1<o.length;s+=2)B(t,o[s],o[s+1]);break}case"group":{let o=it(n.shapes);if(o.minX<=o.maxX)for(let[s,i]of[[o.minX,o.minY],[o.maxX,o.minY],[o.maxX,o.maxY],[o.minX,o.maxY]]){let c=O(s,i,n.rot||0);B(t,c.x,c.y)}break}}return t}function At(e,t){let{shapes:n,height:o}=z(e.type,t),s=it(n);s.minX>s.maxX&&(s={minX:-8,minY:-Math.max(o,12),maxX:8,maxY:6});let i=e.rot||0,c=e.mirror?-1:1,a={minX:1/0,minY:1/0,maxX:-1/0,maxY:-1/0};for(let[u,r]of[[s.minX,s.minY],[s.maxX,s.minY],[s.maxX,s.maxY],[s.minX,s.maxY]]){let h=O(u*c,r,i);B(a,e.x+h.x,e.y+h.y)}let l=5;return{minX:a.minX-l,minY:a.minY-l,maxX:a.maxX+l,maxY:a.maxY+l}}function rt(e,t){if(!e.length)return{minX:-200,minY:-200,maxX:200,maxY:200};let n=1/0,o=1/0,s=-1/0,i=-1/0;for(let c of e){let a=At(c,t);a.minX<n&&(n=a.minX),a.minY<o&&(o=a.minY),a.maxX>s&&(s=a.maxX),a.maxY>i&&(i=a.maxY)}return{minX:n,minY:o,maxX:s,maxY:i}}function zt(e){let{rings:t=[],spokeCount:n=0,spokeMax:o=260,showGrid:s=!1,gridStep:i=24,gridExtent:c=280,showCenter:a=!0}=e,l='<g class="guides" fill="none" stroke="#cfd8e3" stroke-width="1">';if(s){for(let u=-c;u<=c;u+=i)l+=`<line x1="${u}" y1="${-c}" x2="${u}" y2="${c}" stroke="#e7edf4"/>`;for(let u=-c;u<=c;u+=i)l+=`<line x1="${-c}" y1="${u}" x2="${c}" y2="${u}" stroke="#e7edf4"/>`}for(let u of t)l+=`<circle cx="0" cy="0" r="${b(u)}" stroke="#d6deea" stroke-dasharray="3 4"/>`;if(n>0)for(let u=0;u<n;u++){let r=u*360/n,h=O(o,0,r);l+=`<line x1="0" y1="0" x2="${b(h.x)}" y2="${b(h.y)}" stroke="#e1e8f1" stroke-dasharray="2 5"/>`}return a&&(l+='<circle cx="0" cy="0" r="2.4" fill="#9fb0c4" stroke="none"/>'),l+"</g>"}function Ht(e){let t='<g class="anchors" stroke="none" fill="#f06a3a">';for(let n of e)t+=`<circle cx="${b(n.x)}" cy="${b(n.y)}" r="2" opacity="0.8"/>`;return t+"</g>"}function Dt(e,t){if(!t||!t.size)return"";let n='<g class="selection" fill="none">';for(let o of e)t.has(o.id)&&(n+=`<circle cx="${b(o.x)}" cy="${b(o.y)}" r="9" fill="#2f7bff" fill-opacity="0.18" stroke="#2f7bff" stroke-width="1.4"/>`);return n+"</g>"}function kt(e){let t=new Set,n=[];for(let o of e)t.has(o.type)||(t.add(o.type),n.push(o.type));return n}function Nt(e,t,n,o,s){let i=kt(e),c=34,a=`<g class="legend" transform="translate(${b(n)} ${b(o)})">`;return a+=`<text x="0" y="-12" font-family="system-ui,Segoe UI,Arial" font-size="15" font-weight="700" fill="${s}">Legend</text>`,i.forEach((l,u)=>{let r=u*c,{shapes:h,height:d}=z(l,t),f=h.map(m=>D(m,s)).join(""),g=K(l,t),k=g.abbr?`${g.name} (${g.abbr})`:g.name;a+=`<svg x="0" y="${r}" width="30" height="30" viewBox="${vt(h,d)}">${f}</svg>`,a+=`<text x="40" y="${r+20}" font-family="system-ui,Segoe UI,Arial" font-size="14" fill="${s}">${Q(k)}</text>`}),{markup:a+"</g>",height:i.length*c+12,count:i.length}}function Ut(e,t){let n=kt(e);if(!n.length)return 0;let o=7;for(let s of n){let i=K(s,t),c=i.abbr?`${i.name} (${i.abbr})`:i.name;c.length>o&&(o=c.length)}return 40+o*7.6+16}function wt(e,t={}){let n=e.clusterMap||{},o="";t.includeGuides&&(o+=zt(t.guides||{})),o+='<g class="stitches">';for(let s of e.stitches)o+=St(s,n,{interactive:!0});return o+="</g>",t.showAnchors&&(o+=Ht(e.stitches)),o+=Dt(e.stitches,t.selection),o}function Ct(e,t={}){let n=e.clusterMap||{},{padding:o=28,background:s="#ffffff",legend:i=!0,title:c=e.title||"",color:a=q,scale:l=1}=t,u=i&&e.stitches.length>0,r=rt(e.stitches,n),h=r.minX-o,d=r.minY-o,f=r.maxX+o,g=r.maxY+o;if(d-=c?52:0,u&&(f=Math.max(f,h+o+Ut(e.stitches,n))),c){let M=c.length*14.5+24,W=f-h;if(M>W){let y=(M-W)/2;h-=y,f+=y}}let m='<g class="stitches">';for(let M of e.stitches)m+=St(M,n,{interactive:!1});m+="</g>";let x="";if(u){let M=Nt(e.stitches,n,h+o,g+28,a);x=M.markup,g+=M.height+36}let E=f-h,I=g-d,_=c?`<text x="${b(h+E/2)}" y="${b(d+34)}" text-anchor="middle" font-family="system-ui,Segoe UI,Arial" font-size="26" font-weight="800" fill="${a}">${Q(c)}</text>`:"",J=s?`<rect x="${b(h)}" y="${b(d)}" width="${b(E)}" height="${b(I)}" fill="${s}"/>`:"";return`<svg xmlns="http://www.w3.org/2000/svg" width="${b(E*l)}" height="${b(I*l)}" viewBox="${b(h)} ${b(d)} ${b(E)} ${b(I)}">`+J+_+m+x+"</svg>"}var Vt="http://www.w3.org/2000/svg",$t="#2f7bff";function Et(e){let t=document.getElementById("canvas"),n=document.createElementNS(Vt,"g");n.setAttribute("class","cursor-layer"),n.setAttribute("pointer-events","none");let o={...e.state.view},s="place",i={kind:"stitch",ref:"dc"},c=()=>{},a=null,l=null,u=!1,r=()=>t.getBoundingClientRect();function h(y,S){let w=r();return{x:o.panX+(y-(w.left+w.width/2))/o.scale,y:o.panY+(S-(w.top+w.height/2))/o.scale}}function d(){let y=r(),S=Math.max(1,y.width)/o.scale,w=Math.max(1,y.height)/o.scale;t.setAttribute("viewBox",`${o.panX-S/2} ${o.panY-w/2} ${S} ${w}`),e.state.view={...o}}function f(){let y=e.state.settings.guides,S=e.state.settings.snap;return{rings:y.show?H(e.state.rounds):[],spokeCount:y.show&&S.mode==="polar"&&S.spoke?S.spokeCount:0,spokeMax:Math.max(280,...H(e.state.rounds),0)+30,showGrid:y.show&&(S.mode==="grid"||y.showGrid),gridStep:S.gridStep,showCenter:y.show}}function g(){d(),t.innerHTML=wt(e.state,{includeGuides:e.state.settings.guides.show,guides:f(),showAnchors:e.state.settings.guides.showAnchors,selection:e.selection}),t.appendChild(n)}function k(){n.innerHTML=""}function m(y){if(s!=="place")return k();let S=e.snapPoint(y.x,y.y),w=e.defaultRotFor(S.x,S.y),C="";if(i.kind!=="motif"){let{shapes:P}=z(i.ref,e.state.clusterMap);C=`<g transform="translate(${S.x} ${S.y}) rotate(${w})" opacity="0.45">${bt(P,$t)}</g>`}n.innerHTML=C+`<circle cx="${S.x}" cy="${S.y}" r="3.5" fill="none" stroke="${$t}" stroke-width="1.4"/>`}t.addEventListener("pointerdown",y=>{if(y.button===1||s==="pan"||u){l={x:y.clientX,y:y.clientY},t.setPointerCapture(y.pointerId);return}let S=h(y.clientX,y.clientY);if(s==="place"){let C=e.snapPoint(S.x,S.y);i.kind==="motif"?e.placeMotif(i.ref,C.x,C.y):e.addStitch({type:i.ref,x:C.x,y:C.y});return}let w=y.target.closest("[data-id]");if(w){let C=w.getAttribute("data-id");y.shiftKey?e.selectGroupOf(C,!0):e.selection.has(C)||e.selectGroupOf(C,!1);let P=e.byId(C);a={leadId:C,ox:S.x-P.x,oy:S.y-P.y,startU:S,moved:!1,shift:y.shiftKey},t.setPointerCapture(y.pointerId)}else y.shiftKey||e.clearSelection()}),t.addEventListener("pointermove",y=>{if((a||l)&&y.buttons===0){a=null,l=null;try{t.releasePointerCapture(y.pointerId)}catch{}return}let S=h(y.clientX,y.clientY);if(l){o.panX-=(y.clientX-l.x)/o.scale,o.panY-=(y.clientY-l.y)/o.scale,l={x:y.clientX,y:y.clientY},d();return}if(a){if(!a.moved){if(Math.hypot(S.x-a.startU.x,S.y-a.startU.y)*o.scale<3)return;a.moved=!0,e.dragBegin()}let w=e.snapPoint(S.x-a.ox,S.y-a.oy);e.dragSelectionTo(a.leadId,w.x,w.y);return}m(S)});function x(y){a&&!a.moved&&!a.shift&&e.selectGroupOf(a.leadId,!1),l=null,a=null;try{t.releasePointerCapture(y.pointerId)}catch{}}t.addEventListener("pointerup",x),t.addEventListener("pointercancel",x),t.addEventListener("pointerleave",()=>k()),t.addEventListener("wheel",y=>{y.preventDefault();let S=r(),w=y.clientX-(S.left+S.width/2),C=y.clientY-(S.top+S.height/2),P=o.panX+w/o.scale,Ot=o.panY+C/o.scale;o.scale=N(o.scale*Math.exp(-y.deltaY*.0012),.15,9),o.panX=P-w/o.scale,o.panY=Ot-C/o.scale,d()},{passive:!1});function E(){let y=rt(e.state.stitches,e.state.clusterMap),S=r(),w=y.maxX-y.minX+100,C=y.maxY-y.minY+100;o.scale=N(Math.min(S.width/w,S.height/C),.15,9),o.panX=(y.minX+y.maxX)/2,o.panY=(y.minY+y.maxY)/2,g()}function I(y){o.scale=N(o.scale*y,.15,9),d()}let _=!1,J=window.requestAnimationFrame?window.requestAnimationFrame.bind(window):y=>setTimeout(y,16);function M(){_||(_=!0,J(()=>{_=!1,g()}))}return new ResizeObserver(()=>d()).observe(t),e.subscribe(M),g(),{render:g,fit:E,zoomIn:()=>I(1.2),zoomOut:()=>I(1/1.2),setTool(y){s=y,k();let S=t.closest("#canvas-wrap");S&&(S.dataset.tool=y),c(y)},getTool:()=>s,setOnToolChange(y){c=y},setPlacement(y){i=y,s!=="place"&&this.setTool("place")},getPlacement:()=>i,onLoad(){o={...e.state.view},g()},setSpace(y){u=y}}}function Rt(e,t,n){let o=r=>document.getElementById(r),s=[...document.querySelectorAll("[data-tool]")];t.setOnToolChange(r=>s.forEach(h=>h.classList.toggle("active",h.dataset.tool===r))),s.forEach(r=>r.addEventListener("click",()=>t.setTool(r.dataset.tool)));let i=o("sym-order");i.innerHTML=mt.map(r=>`<option value="${r}">${r}-fold</option>`).join(""),i.addEventListener("change",()=>e.setSymmetry({order:+i.value})),o("sym-mirror").addEventListener("change",r=>e.setSymmetry({mirror:r.target.checked})),o("snap-mode").addEventListener("change",r=>e.setSnap({mode:r.target.value})),o("snap-ring").addEventListener("change",r=>e.setSnap({ring:r.target.checked})),o("snap-spoke").addEventListener("change",r=>e.setSnap({spoke:r.target.checked})),o("snap-spoke-count").addEventListener("change",r=>e.setSnap({spokeCount:Math.max(1,+r.target.value|0)})),o("snap-grid-step").addEventListener("change",r=>e.setSnap({gridStep:Math.max(2,+r.target.value)})),o("snap-autoradial").addEventListener("change",r=>e.setSnap({autoRadial:r.target.checked})),o("guide-show").addEventListener("change",r=>e.setGuides({show:r.target.checked})),o("guide-anchors").addEventListener("change",r=>e.setGuides({showAnchors:r.target.checked})),o("zoom-in").addEventListener("click",()=>t.zoomIn()),o("zoom-out").addEventListener("click",()=>t.zoomOut()),o("zoom-fit").addEventListener("click",()=>t.fit()),o("btn-undo").addEventListener("click",()=>e.undo()),o("btn-redo").addEventListener("click",()=>e.redo()),o("file-new").addEventListener("click",()=>{confirm("Start a new, empty chart? Unsaved changes will be lost.")&&(e.reset(),t.onLoad(),t.fit())}),o("file-save").addEventListener("click",()=>n.saveProject()),o("file-open").addEventListener("click",()=>n.openProject()),o("export-svg").addEventListener("click",()=>n.exportSVG()),o("export-png").addEventListener("click",()=>n.exportPNG());let c=o("export-pdf");c&&c.addEventListener("click",()=>n.printPDF());let a=o("title");a.addEventListener("change",()=>e.setTitle(a.value));let l=(r,h)=>{document.activeElement!==r&&(r.value=h)},u=(r,h)=>{document.activeElement!==r&&(r.checked=h)};return e.subscribe(r=>{let h=r.settings.symmetry,d=r.settings.snap,f=r.settings.guides;l(a,r.title),l(i,h.order),u(o("sym-mirror"),h.mirror),l(o("snap-mode"),d.mode),u(o("snap-ring"),d.ring),u(o("snap-spoke"),d.spoke),l(o("snap-spoke-count"),d.spokeCount),l(o("snap-grid-step"),d.gridStep),u(o("snap-autoradial"),d.autoRadial),u(o("guide-show"),f.show),u(o("guide-anchors"),f.showAnchors),o("btn-undo").disabled=e.undoStack.length===0,o("btn-redo").disabled=e.redoStack.length===0}),t.setTool("place"),{setTool:r=>t.setTool(r)}}function p(e,t={},n=[]){let o=document.createElement(e);for(let[s,i]of Object.entries(t))s==="class"?o.className=i:s==="html"?o.innerHTML=i:s==="text"?o.textContent=i:s==="dataset"?Object.assign(o.dataset,i):s.startsWith("on")&&typeof i=="function"?o.addEventListener(s.slice(2),i):i===!0?o.setAttribute(s,""):i!==!1&&i!=null&&o.setAttribute(s,i);for(let s of[].concat(n))s!=null&&o.appendChild(typeof s=="string"?document.createTextNode(s):s);return o}function R(e){for(;e.firstChild;)e.removeChild(e.firstChild)}function Tt(e,t,{actions:n=[],onClose:o}={}){let s=document.getElementById("modal-root"),i=()=>{l.remove(),o&&o()},c=p("div",{class:"modal-footer"},n.map(u=>p("button",{class:"btn "+(u.primary?"btn-primary":""),onclick:()=>u.onClick(i)},u.label))),a=p("div",{class:"modal"},[p("div",{class:"modal-head"},[p("h2",{text:e}),p("button",{class:"icon-btn",title:"Close",onclick:i,html:"&times;"})]),p("div",{class:"modal-body"},t),c]),l=p("div",{class:"modal-backdrop",onclick:u=>{u.target===l&&i()}},a);return s.appendChild(l),{close:i,panel:a}}function Mt(e,t,n){let o=document.getElementById("palette-stitches"),s=document.getElementById("palette-clusters"),i=document.getElementById("palette-motifs"),c="dc";function a(d,f,g,k=[]){let m=p("button",{class:"chip",title:d,dataset:{ref:f},onclick:()=>l(f)},[p("span",{class:"chip-glyph",html:g}),p("span",{class:"chip-label",text:d})]);return k.forEach(x=>m.appendChild(x)),m}function l(d){c=d;let[f,...g]=d.split(":");f==="motif"?t.setPlacement({kind:"motif",ref:g.join(":")}):t.setPlacement({kind:f==="cluster"?"cluster":"stitch",ref:f==="cluster"?g.join(":"):d}),u()}function u(){document.querySelectorAll("#left .chip").forEach(d=>d.classList.toggle("active",d.dataset.ref===c))}for(let d of A)o.appendChild(a($[d].abbr,d,X(d,{},38)));function r(){R(s);let d=e.state.clusters;d.length||s.appendChild(p("p",{class:"empty",text:"No custom clusters yet."}));for(let f of d){let g="cluster:"+f.id,k=p("span",{class:"chip-x",title:"Delete",html:"&times;",onclick:x=>{x.stopPropagation(),e.removeCluster(f.id)}}),m=p("span",{class:"chip-edit",title:"Edit",html:"&#9998;",onclick:x=>{x.stopPropagation(),n.open(f)}});s.appendChild(a(f.name,g,X(f.id,e.state.clusterMap,38),[m,k]))}u()}function h(){R(i);let d=e.state.motifs;d.length||i.appendChild(p("p",{class:"empty",text:'Select stitches, then "Save as motif".'}));for(let f of d){let g="motif:"+f.id,k=p("span",{class:"chip-x",title:"Delete",html:"&times;",onclick:x=>{x.stopPropagation(),e.removeMotif(f.id)}}),m=f.stitches[0]?X(f.stitches[0].type,e.state.clusterMap,38):"";i.appendChild(a(`${f.name} (${f.stitches.length})`,g,m,[k]))}u()}return document.getElementById("btn-new-cluster").addEventListener("click",()=>n.open(null)),document.getElementById("btn-create-motif").addEventListener("click",()=>{if(e.selection.size<2){alert("Select at least two stitches first, then save them as a reusable motif.");return}let d=prompt("Name this motif:","Motif "+(e.state.motifs.length+1));d&&e.createMotifFromSelection(d)}),e.subscribe(()=>{r(),h(),(c.startsWith("cluster:")&&!e.state.clusters.some(d=>"cluster:"+d.id===c)||c.startsWith("motif:")&&!e.state.motifs.some(d=>"motif:"+d.id===c))&&l("dc")}),r(),h(),l("dc"),{choose:l}}var Ft=[{v:null,name:"Default (ink)",css:"#1c1c1c"},{v:"#163a5f",name:"Navy",css:"#163a5f"},{v:"#2f7bff",name:"Blue",css:"#2f7bff"},{v:"#1f9d6b",name:"Green",css:"#1f9d6b"},{v:"#e0a400",name:"Gold",css:"#e0a400"},{v:"#e0542e",name:"Orange",css:"#e0542e"},{v:"#c0317a",name:"Magenta",css:"#c0317a"},{v:"#7a4fd0",name:"Purple",css:"#7a4fd0"}];function Bt(e){let t=document.getElementById("inspector");function n(){return[...e.selection].map(i=>e.byId(i)).filter(Boolean)}function o(){R(t);let i=n();if(!i.length){t.appendChild(p("p",{class:"empty",text:"Nothing selected. Pick a stitch with the Select tool to edit it."}));return}let c=i[0],a=new Set(i.map(g=>g.type)),l=i.some(g=>g.group),u=new Set(i.map(g=>g.color||null));t.appendChild(p("div",{class:"insp-summary",text:`${i.length} stitch${i.length>1?"es":""} selected${l?" \xB7 symmetric":""}`}));let r=p("select",{class:"field",onchange:g=>e.updateSelection({type:g.target.value})});for(let g of A)r.appendChild(p("option",{value:g,text:$[g].name}));for(let g of e.state.clusters)r.appendChild(p("option",{value:g.id,text:g.name}));r.value=a.size===1?c.type:"",t.appendChild(s("Stitch",r));let h=p("div",{class:"swatches"});for(let g of Ft){let k=u.size===1&&(u.has(g.v)||g.v===null&&u.has(null));h.appendChild(p("button",{class:"swatch"+(k?" active":""),title:g.name,style:`background:${g.css}`,onclick:()=>e.updateSelection({color:g.v})}))}let d=p("input",{type:"color",class:"swatch-custom",title:"Custom colour",value:c.color||"#1c1c1c",onchange:g=>e.updateSelection({color:g.target.value})});h.appendChild(d),t.appendChild(s("Colour",h));let f=p("div",{class:"btn-row"},[p("button",{class:"btn",title:"Rotate -15\xB0",onclick:()=>e.rotateSelectionBy(-15),html:"&#8634;"}),p("span",{class:"rot-readout",text:`${Math.round(c.rot||0)}\xB0`}),p("button",{class:"btn",title:"Rotate +15\xB0",onclick:()=>e.rotateSelectionBy(15),html:"&#8635;"})]);t.appendChild(s("Rotation",f)),t.appendChild(p("button",{class:"btn wide",text:"Point outward (radial)",onclick:()=>e.orientSelectionRadial()})),t.appendChild(p("button",{class:"btn wide",text:"Flip / mirror",onclick:()=>e.updateSelection({mirror:!c.mirror})})),l&&t.appendChild(p("button",{class:"btn wide",text:"Break symmetry (detach)",onclick:()=>e.breakSymmetry()})),t.appendChild(p("button",{class:"btn wide danger",text:"Delete",onclick:()=>e.deleteSelection()}))}function s(i,c){return p("label",{class:"insp-field"},[p("span",{class:"insp-label",text:i}),c])}e.subscribe(o),o()}function Lt(e,t){let n=document.getElementById("rounds-list"),o=document.getElementById("distribute-form");function s(){R(n),e.state.rounds.forEach(x=>{let E=p("input",{type:"number",class:"mini",value:Math.round(x.radius),min:4,step:1,onchange:_=>e.updateRound(x.id,{radius:Math.max(4,+_.target.value)})}),I=p("button",{class:"icon-btn",title:"Remove round",html:"&times;",onclick:()=>e.removeRound(x.id)});n.appendChild(p("div",{class:"round-row"},[p("span",{class:"round-label",text:x.label}),E,I]))});let m=p("input",{type:"number",class:"mini",value:i(),min:4,step:1});n.appendChild(p("div",{class:"round-row add"},[p("span",{class:"round-label",text:"+"}),m,p("button",{class:"btn",text:"Add round",onclick:()=>e.addRound(Math.max(4,+m.value))})])),h()}function i(){let m=e.state.rounds.map(x=>x.radius);return m.length?Math.round(Math.max(...m)+38):30}let c=p("select",{class:"field"}),a=p("select",{class:"field"}),l=p("input",{type:"number",class:"mini",value:12,min:1,step:1}),u=p("input",{type:"number",class:"mini",value:-90,step:5}),r=p("input",{type:"checkbox",checked:!0});function h(){let m=c.value;R(c),e.state.rounds.forEach(x=>c.appendChild(p("option",{value:x.radius,text:`${x.label} \xB7 r=${Math.round(x.radius)}`}))),m&&(c.value=m)}function d(){let m=a.value;R(a),A.forEach(x=>a.appendChild(p("option",{value:x,text:$[x].name}))),e.state.clusters.forEach(x=>a.appendChild(p("option",{value:x.id,text:x.name}))),m&&[...a.options].some(x=>x.value===m)?a.value=m:a.value="dc"}function f(){R(o),o.appendChild(k("Round",c)),o.appendChild(k("Stitch",a)),o.appendChild(k("Count",l)),o.appendChild(k("Start \xB0",u)),o.appendChild(k("Point outward",r)),o.appendChild(p("button",{class:"btn btn-primary wide",text:"Distribute around round",onclick:g})),o.appendChild(p("p",{class:"hint",text:"Tip: run it twice with different Start\xB0 to interleave groups and corners."}))}function g(){if(!e.state.rounds.length||!c.value){alert("Add a round first, then distribute a stitch around it.");return}let m=+c.value;if(!(m>0)){alert("Choose a round with a positive radius.");return}let x=Math.max(1,+l.value|0),E=V({radius:m,count:x,sequence:[a.value],startAngle:+u.value,orient:r.checked?"radial":"up"});e.addStitchesRaw(E)}function k(m,x){return p("label",{class:"insp-field"},[p("span",{class:"insp-label",text:m}),x])}e.subscribe(()=>{n.contains(document.activeElement)||s(),document.activeElement!==a&&d()}),n.addEventListener("focusout",()=>{setTimeout(()=>{n.contains(document.activeElement)||s()},0)}),f(),s(),d()}function It(e){let t=document.getElementById("legend-box");function n(){R(t);let o=new Set,s=[];for(let i of e.state.stitches)o.has(i.type)||(o.add(i.type),s.push(i.type));if(!s.length){t.appendChild(p("p",{class:"empty",text:"Symbols you use will be listed here."}));return}for(let i of s){let c=K(i,e.state.clusterMap),a=c.abbr?`${c.name} (${c.abbr})`:c.name;t.appendChild(p("div",{class:"legend-row"},[p("span",{class:"legend-glyph",html:X(i,e.state.clusterMap,30)}),p("span",{text:a})]))}}e.subscribe(n),n()}var qt=["hdc","dc","tr","dtr"];function jt(e){let t=()=>{};function n(o){let s=o?{...o}:{name:"My cluster",base:"dc",legs:3,joinBottom:!0,joinTop:!1,spread:48},i=p("div",{class:"cluster-preview"});function c(){R(i),i.insertAdjacentHTML("beforeend",X("__preview__",{__preview__:s},120))}let a=p("input",{class:"field",value:s.name,oninput:m=>{s.name=m.target.value}}),l=p("select",{class:"field",onchange:m=>{s.base=m.target.value,c()}});qt.forEach(m=>l.appendChild(p("option",{value:m,text:m}))),l.value=s.base;let u=p("input",{type:"number",min:1,max:9,value:s.legs,class:"field",oninput:m=>{s.legs=Math.max(1,Math.min(9,+m.target.value|0)),c()}}),r=p("input",{type:"checkbox",checked:s.joinBottom,onchange:m=>{s.joinBottom=m.target.checked,c()}}),h=p("input",{type:"checkbox",checked:s.joinTop,onchange:m=>{s.joinTop=m.target.checked,c()}}),d=p("input",{type:"range",min:10,max:160,value:s.spread,class:"field",oninput:m=>{s.spread=+m.target.value,c()}}),f=p("select",{class:"field",onchange:m=>{let x=st[+m.target.value];x&&(Object.assign(s,{base:x.base,legs:x.legs,joinTop:!!x.joinTop,joinBottom:!!x.joinBottom,spread:x.spread||48}),o||(s.name=x.name,a.value=x.name),l.value=s.base,u.value=s.legs,r.checked=s.joinBottom,h.checked=s.joinTop,d.value=s.spread,c())}});f.appendChild(p("option",{value:"",text:"Start from a preset\u2026"})),st.forEach((m,x)=>f.appendChild(p("option",{value:x,text:m.name})));function g(m,x){return p("label",{class:"insp-field"},[p("span",{class:"insp-label",text:m}),x])}let k=p("div",{class:"cluster-editor"},[i,p("div",{class:"cluster-fields"},[g("Name",a),g("Preset",f),g("Leg stitch",l),g("Legs",u),g("Join bottom (increase)",r),g("Join top (decrease)",h),g("Fan spread",d),p("p",{class:"hint",text:"Bottom only = shell/V \xB7 Top only = decrease \xB7 Both = bobble/puff."})])]);c(),Tt(o?"Edit cluster":"New cluster",k,{actions:[{label:"Cancel",onClick:m=>m()},{label:"Save",primary:!0,onClick:m=>{let x={name:s.name||"Cluster",base:s.base,legs:s.legs,joinTop:s.joinTop,joinBottom:s.joinBottom,spread:s.spread},E=o?(e.updateCluster(o.id,x),o.id):e.addCluster(x);t(E),m()}}]})}return{open:n,setOnSaved:o=>{t=o}}}function Xt(e,t){function n(){return(e.state.title||"granny-square").trim().replace(/[^\w-]+/g,"-").replace(/^-+|-+$/g,"")||"granny-square"}function o(r,h){let d=URL.createObjectURL(r),f=document.createElement("a");f.href=d,f.download=h,document.body.appendChild(f),f.click(),f.remove(),setTimeout(()=>URL.revokeObjectURL(d),1e3)}function s(){return Ct(e.state,{legend:!0,title:e.state.title})}function i(){o(new Blob([s()],{type:"image/svg+xml;charset=utf-8"}),n()+".svg")}function c(r=3){let h=new Blob([s()],{type:"image/svg+xml;charset=utf-8"}),d=URL.createObjectURL(h),f=new Image;f.onload=()=>{let g=Math.round(f.width*r),k=Math.round(f.height*r),m=document.createElement("canvas");m.width=g,m.height=k,m.getContext("2d").drawImage(f,0,0,g,k),URL.revokeObjectURL(d),m.toBlob(E=>o(E,`${n()}@${r}x.png`),"image/png")},f.onerror=()=>{URL.revokeObjectURL(d),alert("Could not rasterize the chart for PNG export.")},f.src=d}function a(){let r=JSON.stringify(e.serialize(),null,2);o(new Blob([r],{type:"application/json"}),n()+".stitchgrid.json")}function l(){let r=document.createElement("input");r.type="file",r.accept=".json,application/json",r.onchange=()=>{let h=r.files&&r.files[0];if(!h)return;let d=new FileReader;d.onload=()=>{try{e.load(JSON.parse(d.result)),t.onLoad(),t.fit()}catch(f){alert("Could not open project: "+f.message)}},d.readAsText(h)},r.click()}function u(){let r=window.open("","_blank");if(!r){alert("Pop-up blocked \u2014 allow pop-ups to print.");return}r.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${Kt(e.state.title)}</title><style>html,body{margin:0}body{display:flex;justify-content:center;padding:24px}svg{max-width:100%;height:auto}</style></head><body>`+s()+"<script>window.onload=function(){setTimeout(function(){window.print();},250);};<\/script></body></html>"),r.document.close()}return{exportSVG:i,exportPNG:c,saveProject:a,openProject:l,printPDF:u}}function Kt(e){return String(e).replace(/[<>&]/g,t=>({"<":"&lt;",">":"&gt;","&":"&amp;"})[t])}var Yt="stitchgrid:autosave:v1",L=Et(v),Pt=jt(v),ct=Xt(v,L),at=Rt(v,L,ct),Jt=Mt(v,L,Pt);Pt.setOnSaved(e=>Jt.choose("cluster:"+e));Bt(v);Lt(v,L);It(v);var _t=null;v.subscribe(()=>{clearTimeout(_t),_t=setTimeout(()=>{try{localStorage.setItem(Yt,JSON.stringify(v.serialize()))}catch{}},400)});function Wt(){try{let e=localStorage.getItem(Yt);if(!e)return!1;let t=JSON.parse(e);if(t&&Array.isArray(t.stitches)&&t.stitches.length)return v.load(t),!0}catch{}return!1}function Qt(){v.reset(),v.setTitle("Sample Granny Square"),v.setSymmetry({order:4,mirror:!1}),v.addStitch({type:"mr",x:0,y:0},{symmetry:!1,select:!1}),v.addStitchesRaw(V({radius:44,count:12,sequence:["dc"],startAngle:-90,orient:"radial"}),{select:!1});let e=v.addCluster({name:"3 dc shell",base:"dc",legs:3,joinBottom:!0,joinTop:!1,spread:52});for(let t of[-46,0,46])v.addStitch({type:"dc",x:t,y:-120,rot:0},{select:!1});v.addStitch({type:e,x:122,y:-122},{select:!1}),v.clearHistory(),v.emit()}Wt()||Qt();L.onLoad();L.fit();function Zt(e){let t=e.target;return t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.tagName==="SELECT"||t.isContentEditable)}window.addEventListener("keydown",e=>{if(Zt(e))return;let t=e.ctrlKey||e.metaKey,n=e.key.toLowerCase();if(t&&n==="z"){e.preventDefault(),e.shiftKey?v.redo():v.undo();return}if(t&&n==="y"){e.preventDefault(),v.redo();return}if(t&&n==="s"){e.preventDefault(),ct.saveProject();return}if(t)return;if(e.key==="Delete"||e.key==="Backspace"){e.preventDefault(),v.deleteSelection();return}if(e.key==="Escape"){v.clearSelection();return}if(e.key===" "){e.preventDefault(),L.setSpace(!0);return}if(n==="v"){at.setTool("select");return}if(n==="p"){at.setTool("place");return}if(n==="h"){at.setTool("pan");return}if(n==="r"){v.rotateSelectionBy(e.shiftKey?-15:15);return}let o=e.shiftKey?8:2;e.key==="ArrowLeft"?(e.preventDefault(),v.moveSelectionBy(-o,0)):e.key==="ArrowRight"?(e.preventDefault(),v.moveSelectionBy(o,0)):e.key==="ArrowUp"?(e.preventDefault(),v.moveSelectionBy(0,-o)):e.key==="ArrowDown"&&(e.preventDefault(),v.moveSelectionBy(0,o))});window.addEventListener("keyup",e=>{e.key===" "&&L.setSpace(!1)});window.stitchgrid={store:v,canvas:L,exporter:ct};})();
+
+</script></body></html>
