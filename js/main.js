@@ -9,6 +9,7 @@ import { initRoundsPanel } from './roundsPanel.js';
 import { initLegend } from './legend.js';
 import { initClusterEditor } from './clusterEditor.js';
 import { initExport } from './export.js';
+import { initHelp } from './help.js';
 import { distributeRound } from './rounds.js';
 
 const SAVE_KEY = 'stitchgrid:autosave:v1';
@@ -22,6 +23,7 @@ clusterEditor.setOnSaved((id) => palette.choose('cluster:' + id));
 initInspector(store);
 initRoundsPanel(store, canvas);
 initLegend(store);
+initHelp();
 
 // ---- autosave (the container is ephemeral; keep work between reloads) ------
 let saveTimer = null;

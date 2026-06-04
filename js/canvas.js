@@ -25,6 +25,7 @@ export function initCanvas(store) {
   let onToolChange = () => {};
   let drag = null; // { leadId, ox, oy, startU, moved }
   let panning = null;
+  let marquee = null; // { startU, additive, base:Set, moved }
   let spaceDown = false;
 
   const rect = () => svg.getBoundingClientRect();
@@ -110,17 +111,21 @@ export function initCanvas(store) {
       const lead = store.byId(id);
       drag = { leadId: id, ox: u.x - lead.x, oy: u.y - lead.y, startU: u, moved: false, shift: e.shiftKey };
       svg.setPointerCapture(e.pointerId);
-    } else if (!e.shiftKey) {
-      store.clearSelection();
+    } else {
+      // empty space: begin a rubber-band (box) selection
+      marquee = { startU: u, additive: e.shiftKey, base: e.shiftKey ? new Set(store.selection) : new Set(), moved: false };
+      svg.setPointerCapture(e.pointerId);
     }
   });
 
   svg.addEventListener('pointermove', (e) => {
     // Recover if a pointerup was missed (released off-window, capture lost):
     // no buttons held means the gesture is over.
-    if ((drag || panning) && e.buttons === 0) {
+    if ((drag || panning || marquee) && e.buttons === 0) {
       drag = null;
       panning = null;
+      marquee = null;
+      clearGhost();
       try { svg.releasePointerCapture(e.pointerId); } catch {}
       return;
     }
@@ -130,6 +135,20 @@ export function initCanvas(store) {
       view.panY -= (e.clientY - panning.y) / view.scale;
       panning = { x: e.clientX, y: e.clientY };
       applyViewBox();
+      return;
+    }
+    if (marquee) {
+      marquee.moved = true;
+      const x0 = Math.min(marquee.startU.x, u.x);
+      const y0 = Math.min(marquee.startU.y, u.y);
+      const w = Math.abs(u.x - marquee.startU.x);
+      const h = Math.abs(u.y - marquee.startU.y);
+      cursorLayer.innerHTML = `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="${GHOST}" fill-opacity="0.08" stroke="${GHOST}" stroke-width="1.2" stroke-dasharray="4 3"/>`;
+      const ids = new Set(marquee.base);
+      for (const st of store.state.stitches) {
+        if (st.x >= x0 && st.x <= x0 + w && st.y >= y0 && st.y <= y0 + h) ids.add(st.id);
+      }
+      store.setSelection([...ids]);
       return;
     }
     if (drag) {
@@ -150,13 +169,17 @@ export function initCanvas(store) {
     // A click (no drag, no shift) on a stitch that's part of a larger selection
     // collapses the selection down to just that stitch's group.
     if (drag && !drag.moved && !drag.shift) store.selectGroupOf(drag.leadId, false);
+    // An empty click (box-select that never moved) clears the selection.
+    if (marquee && !marquee.moved && !marquee.additive) store.clearSelection();
+    if (marquee) clearGhost();
     panning = null;
     drag = null;
+    marquee = null;
     try { svg.releasePointerCapture(e.pointerId); } catch {}
   }
   svg.addEventListener('pointerup', endPointer);
   svg.addEventListener('pointercancel', endPointer);
-  svg.addEventListener('pointerleave', () => clearGhost());
+  svg.addEventListener('pointerleave', () => { if (!marquee && !drag && !panning) clearGhost(); });
 
   svg.addEventListener('wheel', (e) => {
     e.preventDefault();

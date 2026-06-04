@@ -252,4 +252,18 @@ test('a no-op drag leaves no undo entry; a real drag leaves exactly one', () => 
   assert.equal(store.undoStack.length, before + 1, 'one snapshot for the gesture');
 });
 
+test('snapPoint snaps near-centre clicks to the chart centre (polar)', () => {
+  store.reset();
+  store.setSnap({ mode: 'polar', ring: true, spoke: true });
+  assert.deepEqual(store.snapPoint(6, -5), { x: 0, y: 0 });
+});
+
+test('placing at the centre makes a single stitch despite symmetry', () => {
+  store.reset();
+  store.setSymmetry({ order: 4, mirror: false });
+  const ids = store.addStitch({ type: 'mr', x: 0, y: 0 });
+  assert.equal(ids.length, 1);
+  assert.equal(store.state.stitches.length, 1);
+});
+
 console.log(`\n  ${passed} tests passed\n`);

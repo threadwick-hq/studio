@@ -117,13 +117,18 @@ class Store {
   snapPoint(x, y) {
     const s = this.state.settings.snap;
     if (s.mode === 'grid') return snapGrid(x, y, s.gridStep);
-    if (s.mode === 'polar' && (s.ring || s.spoke)) {
-      return snapPolar(x, y, {
-        rings: ringRadii(this.state.rounds),
-        spokeStep: s.spokeCount ? 360 / s.spokeCount : 0,
-        snapRing: s.ring,
-        snapSpoke: s.spoke,
-      });
+    if (s.mode === 'polar') {
+      // The centre (0,0) isn't on any ring, so make it snappable directly —
+      // otherwise the magic ring / round-0 start can't land in the middle.
+      if (Math.hypot(x, y) < 16) return { x: 0, y: 0 };
+      if (s.ring || s.spoke) {
+        return snapPolar(x, y, {
+          rings: ringRadii(this.state.rounds),
+          spokeStep: s.spokeCount ? 360 / s.spokeCount : 0,
+          snapRing: s.ring,
+          snapSpoke: s.spoke,
+        });
+      }
     }
     return { x, y };
   }
@@ -163,7 +168,10 @@ class Store {
     const color = params.color ?? null;
     const round = params.round ?? null;
     const sym = this.state.settings.symmetry;
-    const useSym = symmetry && (sym.order > 1 || sym.mirror);
+    // A stitch at the exact centre is the symmetry fixed point — place a single
+    // one (the magic ring / round-0 start), not N overlapping copies.
+    const atCenter = Math.hypot(x, y) < 1e-6;
+    const useSym = symmetry && !atCenter && (sym.order > 1 || sym.mirror);
     const ids = [];
     this.transact('add stitch', () => {
       if (!useSym) {

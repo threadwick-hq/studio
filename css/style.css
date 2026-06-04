@@ -180,3 +180,18 @@ body {
   background: var(--line-soft); border-radius: 10px; min-height: 150px;
 }
 .cluster-fields .insp-field { grid-template-columns: 120px 1fr; }
+
+/* ---- help ---- */
+#help-btn { font-weight: 600; }
+.help { display: grid; gap: 18px; }
+.help-section h3 { margin: 0 0 6px; font-size: 13px; }
+.help-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.help-table td { padding: 4px 10px 4px 0; vertical-align: top; line-height: 1.5; }
+.help-key { white-space: nowrap; color: var(--muted); width: 36%; }
+.help b { color: var(--ink); }
+.help code { background: var(--line-soft); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+kbd {
+  font: 600 11px ui-monospace, Menlo, Consolas, monospace;
+  background: var(--line-soft); border: 1px solid var(--line);
+  border-bottom-width: 2px; border-radius: 5px; padding: 1px 5px; color: var(--ink);
+}

@@ -67,14 +67,18 @@ export function initInspector(store) {
       el('button', { class: 'btn', title: 'Rotate +15°', onclick: () => store.rotateSelectionBy(15), html: '&#8635;' }),
     ]);
     box.appendChild(field('Rotation', rotRow));
-    box.appendChild(el('button', { class: 'btn wide', text: 'Point outward (radial)', onclick: () => store.orientSelectionRadial() }));
-    box.appendChild(el('button', { class: 'btn wide', text: 'Flip / mirror', onclick: () => store.updateSelection({ mirror: !lead.mirror }) }));
+    box.appendChild(el('button', { class: 'btn wide', title: 'Rotate so the stitch points outward from the centre',
+      text: 'Point outward (radial)', onclick: () => store.orientSelectionRadial() }));
+    box.appendChild(el('button', { class: 'btn wide', title: 'Mirror the selection (flips slash / chirality)',
+      text: 'Flip / mirror', onclick: () => store.updateSelection({ mirror: !lead.mirror }) }));
 
     // structure
     if (grouped) {
-      box.appendChild(el('button', { class: 'btn wide', text: 'Break symmetry (detach)', onclick: () => store.breakSymmetry() }));
+      box.appendChild(el('button', { class: 'btn wide', title: 'Detach this symmetry group so members can be edited independently',
+        text: 'Break symmetry (detach)', onclick: () => store.breakSymmetry() }));
     }
-    box.appendChild(el('button', { class: 'btn wide danger', text: 'Delete', onclick: () => store.deleteSelection() }));
+    box.appendChild(el('button', { class: 'btn wide danger', title: 'Delete the selection (Del)',
+      text: 'Delete', onclick: () => store.deleteSelection() }));
   }
 
   function field(label, control) {
