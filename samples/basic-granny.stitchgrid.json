@@ -23,39 +23,39 @@
   },
   "rounds": [
     {
-      "id": "rnd_m0urrla",
+      "id": "rnd_7nceqmw",
       "radius": 30,
       "label": "R1"
     },
     {
-      "id": "rnd_kfuazj8",
+      "id": "rnd_37fp5nj",
       "radius": 64,
       "label": "R2"
     },
     {
-      "id": "rnd_3sgzi3q",
+      "id": "rnd_xxtn4yu",
       "radius": 100,
       "label": "R3"
     },
     {
-      "id": "rnd_v5c5k4a",
+      "id": "rnd_2gu28ti",
       "radius": 138,
       "label": "R4"
     },
     {
-      "id": "rnd_pbp2jjj",
+      "id": "rnd_im9nffe",
       "radius": 178,
       "label": "R5"
     },
     {
-      "id": "rnd_r15gm61",
+      "id": "rnd_8m2j650",
       "radius": 220,
       "label": "R6"
     }
   ],
   "clusters": [
     {
-      "id": "cl_y45yage",
+      "id": "cl_weuvjhn",
       "name": "3 dc shell",
       "base": "dc",
       "legs": 3,
@@ -67,7 +67,7 @@
   "motifs": [],
   "stitches": [
     {
-      "id": "st_qjm7ll9",
+      "id": "st_9qrxptj",
       "group": null,
       "type": "mr",
       "x": 0,
@@ -78,7 +78,7 @@
       "round": null
     },
     {
-      "id": "st_wyd9ns8",
+      "id": "st_lbz5goc",
       "group": null,
       "type": "dc",
       "x": 2.6942229581241772e-15,
@@ -89,7 +89,7 @@
       "round": null
     },
     {
-      "id": "st_ei0dvk1",
+      "id": "st_nrrkslh",
       "group": null,
       "type": "dc",
       "x": 22.000000000000004,
@@ -100,7 +100,7 @@
       "round": null
     },
     {
-      "id": "st_fmdr0yc",
+      "id": "st_5c3t0zx",
       "group": null,
       "type": "dc",
       "x": 38.105117766515306,
@@ -111,7 +111,7 @@
       "round": null
     },
     {
-      "id": "st_u1kjc2r",
+      "id": "st_m6cr6v4",
       "group": null,
       "type": "dc",
       "x": 44,
@@ -122,7 +122,7 @@
       "round": null
     },
     {
-      "id": "st_p6fdk30",
+      "id": "st_k5h2hly",
       "group": null,
       "type": "dc",
       "x": 38.105117766515306,
@@ -133,7 +133,7 @@
       "round": null
     },
     {
-      "id": "st_hei1zxh",
+      "id": "st_noa158v",
       "group": null,
       "type": "dc",
       "x": 22.000000000000004,
@@ -144,7 +144,7 @@
       "round": null
     },
     {
-      "id": "st_uaup5l5",
+      "id": "st_1tjtg8x",
       "group": null,
       "type": "dc",
       "x": 2.6942229581241772e-15,
@@ -155,7 +155,7 @@
       "round": null
     },
     {
-      "id": "st_d3f52sm",
+      "id": "st_vco8wr1",
       "group": null,
       "type": "dc",
       "x": -21.99999999999999,
@@ -166,7 +166,7 @@
       "round": null
     },
     {
-      "id": "st_uipv3cm",
+      "id": "st_clnfmg3",
       "group": null,
       "type": "dc",
       "x": -38.105117766515306,
@@ -177,7 +177,7 @@
       "round": null
     },
     {
-      "id": "st_2ebk3ec",
+      "id": "st_nlzh2mv",
       "group": null,
       "type": "dc",
       "x": -44,
@@ -188,7 +188,7 @@
       "round": null
     },
     {
-      "id": "st_iu6nkzk",
+      "id": "st_cwb3f6x",
       "group": null,
       "type": "dc",
       "x": -38.1051177665153,
@@ -199,7 +199,7 @@
       "round": null
     },
     {
-      "id": "st_aqf4t6y",
+      "id": "st_71ivjm5",
       "group": null,
       "type": "dc",
       "x": -22.00000000000002,
@@ -210,8 +210,8 @@
       "round": null
     },
     {
-      "id": "st_mump2n1",
-      "group": "grp_dbrrgxd",
+      "id": "st_myhsljz",
+      "group": "grp_7d1esgg",
       "type": "dc",
       "x": -46,
       "y": -120,
@@ -221,8 +221,8 @@
       "round": null
     },
     {
-      "id": "st_alu5hif",
-      "group": "grp_dbrrgxd",
+      "id": "st_dn7bzya",
+      "group": "grp_7d1esgg",
       "type": "dc",
       "x": 120,
       "y": -46.00000000000001,
@@ -232,8 +232,8 @@
       "round": null
     },
     {
-      "id": "st_4kswnkh",
-      "group": "grp_dbrrgxd",
+      "id": "st_98sey83",
+      "group": "grp_7d1esgg",
       "type": "dc",
       "x": 46.000000000000014,
       "y": 120,
@@ -243,8 +243,8 @@
       "round": null
     },
     {
-      "id": "st_x38fd04",
-      "group": "grp_dbrrgxd",
+      "id": "st_t4ga510",
+      "group": "grp_7d1esgg",
       "type": "dc",
       "x": -119.99999999999999,
       "y": 46.00000000000002,
@@ -254,8 +254,8 @@
       "round": null
     },
     {
-      "id": "st_kurz3mk",
-      "group": "grp_5qcae4i",
+      "id": "st_rsuszm8",
+      "group": "grp_12mck5z",
       "type": "dc",
       "x": 0,
       "y": -120,
@@ -265,8 +265,8 @@
       "round": null
     },
     {
-      "id": "st_9a4be25",
-      "group": "grp_5qcae4i",
+      "id": "st_48sjba8",
+      "group": "grp_12mck5z",
       "type": "dc",
       "x": 120,
       "y": -7.34788079488412e-15,
@@ -276,8 +276,8 @@
       "round": null
     },
     {
-      "id": "st_w10vuna",
-      "group": "grp_5qcae4i",
+      "id": "st_h6sk8fg",
+      "group": "grp_12mck5z",
       "type": "dc",
       "x": 1.469576158976824e-14,
       "y": 120,
@@ -287,8 +287,8 @@
       "round": null
     },
     {
-      "id": "st_zftp6lh",
-      "group": "grp_5qcae4i",
+      "id": "st_yg37zjf",
+      "group": "grp_12mck5z",
       "type": "dc",
       "x": -120,
       "y": 2.2043642384652355e-14,
@@ -298,8 +298,8 @@
       "round": null
     },
     {
-      "id": "st_dqrkk92",
-      "group": "grp_4vv849e",
+      "id": "st_6748yrj",
+      "group": "grp_zcqrp3s",
       "type": "dc",
       "x": 46,
       "y": -120,
@@ -309,8 +309,8 @@
       "round": null
     },
     {
-      "id": "st_dk94x73",
-      "group": "grp_4vv849e",
+      "id": "st_y6a6kfx",
+      "group": "grp_zcqrp3s",
       "type": "dc",
       "x": 120,
       "y": 45.99999999999999,
@@ -320,8 +320,8 @@
       "round": null
     },
     {
-      "id": "st_s7pwnw0",
-      "group": "grp_4vv849e",
+      "id": "st_pmz1f2f",
+      "group": "grp_zcqrp3s",
       "type": "dc",
       "x": -45.999999999999986,
       "y": 120,
@@ -331,8 +331,8 @@
       "round": null
     },
     {
-      "id": "st_5bt8hjt",
-      "group": "grp_4vv849e",
+      "id": "st_rkx933a",
+      "group": "grp_zcqrp3s",
       "type": "dc",
       "x": -120.00000000000001,
       "y": -45.99999999999998,
@@ -342,9 +342,9 @@
       "round": null
     },
     {
-      "id": "st_cfp7abk",
-      "group": "grp_5idfq4u",
-      "type": "cl_y45yage",
+      "id": "st_abgtxii",
+      "group": "grp_7li61jq",
+      "type": "cl_weuvjhn",
       "x": 122,
       "y": -122,
       "rot": 45,
@@ -353,9 +353,9 @@
       "round": null
     },
     {
-      "id": "st_qp4vo5t",
-      "group": "grp_5idfq4u",
-      "type": "cl_y45yage",
+      "id": "st_7r0e3es",
+      "group": "grp_7li61jq",
+      "type": "cl_weuvjhn",
       "x": 122.00000000000001,
       "y": 121.99999999999999,
       "rot": 135,
@@ -364,9 +364,9 @@
       "round": null
     },
     {
-      "id": "st_5enavh8",
-      "group": "grp_5idfq4u",
-      "type": "cl_y45yage",
+      "id": "st_u2ysjbt",
+      "group": "grp_7li61jq",
+      "type": "cl_weuvjhn",
       "x": -121.99999999999999,
       "y": 122.00000000000001,
       "rot": 225,
@@ -375,9 +375,9 @@
       "round": null
     },
     {
-      "id": "st_9j39oac",
-      "group": "grp_5idfq4u",
-      "type": "cl_y45yage",
+      "id": "st_cyuprf2",
+      "group": "grp_7li61jq",
+      "type": "cl_weuvjhn",
       "x": -122.00000000000003,
       "y": -121.99999999999997,
       "rot": 315,
@@ -387,22 +387,22 @@
     }
   ],
   "groups": {
-    "grp_dbrrgxd": {
+    "grp_7d1esgg": {
       "order": 4,
       "mirror": false,
       "axis": -90
     },
-    "grp_5qcae4i": {
+    "grp_12mck5z": {
       "order": 4,
       "mirror": false,
       "axis": -90
     },
-    "grp_4vv849e": {
+    "grp_zcqrp3s": {
       "order": 4,
       "mirror": false,
       "axis": -90
     },
-    "grp_5idfq4u": {
+    "grp_7li61jq": {
       "order": 4,
       "mirror": false,
       "axis": -90

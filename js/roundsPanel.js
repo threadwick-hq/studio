@@ -100,6 +100,11 @@ export function initRoundsPanel(store, canvas) {
     if (!listBox.contains(document.activeElement)) renderList();
     if (document.activeElement !== stitchSel) refreshStitchOptions();
   });
+  // When focus leaves the list, refresh it so relabelled / reordered rows and
+  // clamped values that were skipped during editing are shown.
+  listBox.addEventListener('focusout', () => {
+    setTimeout(() => { if (!listBox.contains(document.activeElement)) renderList(); }, 0);
+  });
   buildForm();
   renderList();
   refreshStitchOptions();
