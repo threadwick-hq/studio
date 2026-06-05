@@ -1,6 +1,6 @@
 // palette.js — left sidebar: base stitches, custom clusters, reusable motifs.
 
-import { STITCH_ORDER, STITCHES } from './stitches.js';
+import { STITCH_ORDER, STITCHES, STARTS } from './stitches.js';
 import { glyphSVG } from './svg.js';
 import { el, clear } from './ui.js';
 
@@ -33,7 +33,11 @@ export function initPalette(store, canvas, clusterEditor) {
     document.querySelectorAll('#left .chip').forEach((c) => c.classList.toggle('active', c.dataset.ref === activeRef));
   }
 
-  // base stitches are static
+  // start (round-0) elements + base stitches are static
+  const startsBox = document.getElementById('palette-starts');
+  for (const type of STARTS) {
+    startsBox.appendChild(chip(STITCHES[type].abbr, type, glyphSVG(type, {}, 38)));
+  }
   for (const type of STITCH_ORDER) {
     stitchesBox.appendChild(chip(STITCHES[type].abbr, type, glyphSVG(type, {}, 38)));
   }

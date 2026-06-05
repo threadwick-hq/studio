@@ -91,13 +91,35 @@ export const STITCHES = {
   mr: {
     name: 'Magic ring',
     abbr: 'ring',
-    category: 'special',
+    category: 'start',
     build: () => ({ shapes: [{ k: 'circle', cx: 0, cy: 0, r: 15 }], height: 0 }),
+  },
+  dmr: {
+    name: 'Double magic ring',
+    abbr: '2-ring',
+    category: 'start',
+    build: () => ({ shapes: [{ k: 'circle', cx: 0, cy: 0, r: 15 }, { k: 'circle', cx: 0, cy: 0, r: 11 }], height: 0 }),
+  },
+  chring: {
+    name: 'Chain ring',
+    abbr: 'ch-ring',
+    category: 'start',
+    // a loop of chains: tangential ovals arranged around a circle
+    build: () => {
+      const R = 13, N = 9, shapes = [];
+      for (let i = 0; i < N; i++) {
+        shapes.push({ k: 'group', rot: (i * 360) / N, shapes: [{ k: 'ellipse', cx: R, cy: 0, rx: 2.6, ry: 4.4 }] });
+      }
+      return { shapes, height: 0 };
+    },
   },
 };
 
 // Display order for the palette.
-export const STITCH_ORDER = ['ch', 'slst', 'sc', 'hdc', 'dc', 'tr', 'dtr', 'mr'];
+export const STITCH_ORDER = ['ch', 'slst', 'sc', 'hdc', 'dc', 'tr', 'dtr'];
+
+// Round-0 "start" elements — the roots every stitch ultimately comes from.
+export const STARTS = ['mr', 'dmr', 'chring'];
 
 export function getStitch(type) {
   return STITCHES[type] || null;

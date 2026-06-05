@@ -6,7 +6,8 @@
 // whole chart on every mouse move. Zoom/pan only touch the viewBox (vectors
 // scale for free), so they stay smooth regardless of stitch count.
 
-import { clamp } from './util.js';
+import { clamp, round } from './util.js';
+import { symmetryOrbit } from './symmetry.js';
 import { ringRadii } from './rounds.js';
 import { chartInner, contentBounds, buildStitchShapes, shapesMarkup } from './svg.js';
 
@@ -78,14 +79,25 @@ export function initCanvas(store) {
     if (tool !== 'place') return clearGhost();
     const p = store.snapPoint(u.x, u.y);
     const rot = store.defaultRotFor(p.x, p.y);
-    let ghost = '';
+    const sym = store.state.settings.symmetry;
+    const atCenter = Math.hypot(p.x, p.y) < 1e-6;
+    // Preview where symmetry will copy this stitch, so it's obvious before clicking.
+    const useSym = placement.kind !== 'motif' && !atCenter && (sym.order > 1 || sym.mirror);
+    const orbit = useSym
+      ? symmetryOrbit({ x: p.x, y: p.y, rot, mirror: false }, sym)
+      : [{ x: p.x, y: p.y, rot, mirror: false }];
+    let out = '';
     if (placement.kind !== 'motif') {
-      const { shapes } = buildStitchShapes(placement.ref, store.state.clusterMap);
-      ghost = `<g transform="translate(${p.x} ${p.y}) rotate(${rot})" opacity="0.45">${shapesMarkup(shapes, GHOST)}</g>`;
+      const inner = shapesMarkup(buildStitchShapes(placement.ref, store.state.clusterMap).shapes, GHOST);
+      orbit.forEach((o, i) => {
+        const m = o.mirror ? ' scale(-1,1)' : '';
+        out += `<g transform="translate(${round(o.x)} ${round(o.y)}) rotate(${round(o.rot)})${m}" opacity="${i === 0 ? 0.55 : 0.26}">${inner}</g>`;
+      });
     }
-    cursorLayer.innerHTML =
-      ghost +
-      `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="none" stroke="${GHOST}" stroke-width="1.4"/>`;
+    for (const o of orbit) {
+      out += `<circle cx="${round(o.x)}" cy="${round(o.y)}" r="3.2" fill="none" stroke="${GHOST}" stroke-width="1.2"/>`;
+    }
+    cursorLayer.innerHTML = out;
   }
 
   // ---- pointer interaction -------------------------------------------------

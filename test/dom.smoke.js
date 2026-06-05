@@ -20,7 +20,8 @@ global.localStorage = { getItem: (k) => (mem.has(k) ? mem.get(k) : null), setIte
 await import('../js/main.js');
 
 const $ = (id) => document.getElementById(id);
-assert.equal($('palette-stitches').children.length, 8, 'eight base stitches in palette');
+assert.equal($('palette-stitches').children.length, 7, 'seven base stitches in palette');
+assert.equal($('palette-starts').children.length, 3, 'three round-0 start elements');
 assert.ok($('canvas').children.length > 0, 'canvas rendered something');
 assert.ok($('legend-box').children.length > 0, 'legend populated from sample');
 assert.ok(/Nothing selected/.test($('inspector').textContent), 'inspector shows empty state');
