@@ -121,6 +121,13 @@ export const STITCH_ORDER = ['ch', 'slst', 'sc', 'hdc', 'dc', 'tr', 'dtr'];
 // Round-0 "start" elements — the roots every stitch ultimately comes from.
 export const STARTS = ['mr', 'dmr', 'chring'];
 
+// "Real" stitches for space calculation: chains and slip stitches (and the
+// round-0 starts) don't form spaces — only posts/crosses/clusters do. So the
+// space in "3dc ch2 3dc" sits between the flanking dc, skipping the chains.
+export function isRealStitch(type) {
+  return type !== 'ch' && type !== 'slst' && !STARTS.includes(type);
+}
+
 // Single-key shortcuts for entering insert mode with a given stitch/start.
 export const STITCH_KEYS = {
   ch: 'c', slst: 'l', sc: 's', hdc: 'h', dc: 'd', tr: 't', dtr: 'e',

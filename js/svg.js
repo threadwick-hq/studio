@@ -6,7 +6,7 @@
 // exact same output. One renderer => the editor is a true WYSIWYG preview of
 // what gets exported.
 
-import { STITCHES, getStitch } from './stitches.js';
+import { STITCHES, getStitch, isRealStitch } from './stitches.js';
 import { buildCluster } from './clusters.js';
 import { rotatePoint } from './geometry.js';
 import { round, escapeXML } from './util.js';
@@ -49,6 +49,50 @@ export function buildStitchShapes(type, clusterMap, len) {
   const def = clusterMap && clusterMap[type];
   if (def) return buildCluster(def);
   return STITCHES.dc.build(len);
+}
+
+// ---- connectivity geometry ------------------------------------------------
+// A stitch's HEAD: the end of its line (top bar / dot / 2nd chain point), in
+// world space. Its BASE is simply its anchor (st.x, st.y).
+export function topOfStitch(st, clusterMap) {
+  const h = buildStitchShapes(st.type, clusterMap, st.len).height || 0;
+  const p = rotatePoint(0, -h, st.rot || 0);
+  return { x: st.x + p.x, y: st.y + p.y };
+}
+
+// Resolve a point to the base it should attach to: the nearest stitch HEAD, or
+// the SPACE between the two nearest *real* stitch heads (chains/slip-stitches
+// excluded). Returns { kind:'stitch', id } | { kind:'space', ids:[a,b] } | null.
+export function pickBase(stitches, x, y, clusterMap, maxD = 90) {
+  const tops = stitches
+    .map((s) => { const pt = topOfStitch(s, clusterMap); return { s, pt, d: Math.hypot(pt.x - x, pt.y - y) }; })
+    .sort((a, b) => a.d - b.d);
+  if (!tops.length) return null;
+  const head = tops[0].d <= maxD ? tops[0] : null;
+  let space = null;
+  const real = tops.filter((t) => isRealStitch(t.s.type));
+  if (real.length >= 2) {
+    const a = real[0], b = real[1];
+    if (Math.hypot(a.pt.x - b.pt.x, a.pt.y - b.pt.y) <= maxD) {
+      const mx = (a.pt.x + b.pt.x) / 2, my = (a.pt.y + b.pt.y) / 2;
+      const d = Math.hypot(mx - x, my - y);
+      if (d <= maxD) space = { ids: [a.s.id, b.s.id], d };
+    }
+  }
+  if (space && (!head || space.d <= head.d)) return { kind: 'space', ids: space.ids };
+  if (head) return { kind: 'stitch', id: head.s.id };
+  return null;
+}
+
+// Nearest stitch (by head) to a point — used to pick the origin.
+export function nearestStitch(stitches, x, y, clusterMap, maxD = Infinity) {
+  let best = null, bd = Infinity;
+  for (const s of stitches) {
+    const pt = topOfStitch(s, clusterMap);
+    const d = Math.hypot(pt.x - x, pt.y - y);
+    if (d < bd) { bd = d; best = s; }
+  }
+  return best && bd <= maxD ? best : null;
 }
 
 export function labelFor(type, clusterMap) {
@@ -224,6 +268,31 @@ function selectionSVG(stitches, selection) {
   return out + '</g>';
 }
 
+// For each selected stitch, reveal its origin (light blue, with a link), base
+// (orange, its anchor) and head (blue, its end) — the framework made visible.
+function connectionsSVG(stitches, selection, clusterMap) {
+  if (!selection || !selection.size) return '';
+  const byId = new Map(stitches.map((s) => [s.id, s]));
+  const mk = (pt, color, label) =>
+    `<circle cx="${round(pt.x)}" cy="${round(pt.y)}" r="3.5" fill="${color}" fill-opacity="0.5" stroke="${color}" stroke-width="1.6"/>` +
+    `<text x="${round(pt.x) + 6}" y="${round(pt.y) + 3}" font-size="9" font-weight="700" fill="${color}" paint-order="stroke" stroke="#fff" stroke-width="2.5">${label}</text>`;
+  let out = '<g class="connections" pointer-events="none">';
+  for (const st of stitches) {
+    if (!selection.has(st.id)) continue;
+    const base = { x: st.x, y: st.y };
+    const head = topOfStitch(st, clusterMap);
+    const origin = st.origin && byId.get(st.origin);
+    if (origin) {
+      const oh = topOfStitch(origin, clusterMap);
+      out += `<line x1="${round(oh.x)}" y1="${round(oh.y)}" x2="${round(base.x)}" y2="${round(base.y)}" stroke="#5cb3ff" stroke-width="1.4" stroke-dasharray="4 3" opacity="0.8"/>`;
+      out += mk(oh, '#5cb3ff', 'origin');
+    }
+    out += mk(base, '#e8830c', 'base');
+    out += mk(head, '#2f7bff', 'head');
+  }
+  return out + '</g>';
+}
+
 // ---- legend ---------------------------------------------------------------
 
 function usedTypes(stitches) {
@@ -281,6 +350,7 @@ export function chartInner(state, opts = {}) {
   out += '</g>';
   if (opts.showAnchors) out += anchorsSVG(state.stitches);
   out += selectionSVG(state.stitches, opts.selection);
+  out += connectionsSVG(state.stitches, opts.selection, clusterMap);
   return out;
 }
 

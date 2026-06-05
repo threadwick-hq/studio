@@ -6,7 +6,7 @@ import { STITCHES, postShapes, SLASH_COUNT } from '../js/stitches.js';
 import { buildCluster, PRESET_CLUSTERS } from '../js/clusters.js';
 import { symmetryOrbit, orbitSize } from '../js/symmetry.js';
 import { distributeRound } from '../js/rounds.js';
-import { chartToSVG, buildStitchShapes, contentBounds } from '../js/svg.js';
+import { chartToSVG, buildStitchShapes, contentBounds, pickBase, topOfStitch } from '../js/svg.js';
 import { store } from '../js/state.js';
 
 let passed = 0;
@@ -294,15 +294,6 @@ test('symmetric copies do not carry the seed connectivity', () => {
   assert.equal(store.byId(ids[1]).target, null);
 });
 
-test('suggestTarget picks the nearest inner-round stitch', () => {
-  store.reset();
-  store.setSymmetry({ order: 1, mirror: false });
-  const [inner] = store.addStitch({ type: 'dc', x: 30, y: 0 }); // r=30
-  store.addStitch({ type: 'dc', x: 200, y: 0 }); // far away, r=200
-  assert.equal(store.suggestTarget(60, 0), inner, 'targets the close inner stitch');
-  assert.equal(store.suggestTarget(10, 0), null, 'nothing inner of r=10');
-});
-
 test('currentOriginId clears when the working stitch is deleted', () => {
   store.reset();
   store.setSymmetry({ order: 1, mirror: false });
@@ -313,25 +304,25 @@ test('currentOriginId clears when the working stitch is deleted', () => {
   assert.equal(store.currentOriginId(), null, 'dangling working position is dropped');
 });
 
-test('pickTarget distinguishes a stitch from a space between two stitches', () => {
-  store.reset();
-  store.setSymmetry({ order: 1, mirror: false });
-  const [a] = store.addStitch({ type: 'dc', x: -20, y: 40 });
-  const [b] = store.addStitch({ type: 'dc', x: 20, y: 40 });
-  const onB = store.pickTarget(20, 84);
-  assert.equal(onB.kind, 'stitch');
-  assert.equal(onB.id, b);
-  const between = store.pickTarget(0, 84);
-  assert.equal(between.kind, 'space');
-  assert.deepEqual(new Set(between.ids), new Set([a, b]));
+test('pickBase: stitch head vs space, skipping chains/slip-stitches', () => {
+  // two dc heads at (-20,-32) and (20,-32) (dc height 32, rot 0), a chain between
+  const stitches = [
+    { id: 'd1', type: 'dc', x: -20, y: 0, rot: 0 },
+    { id: 'c1', type: 'ch', x: 0, y: 0, rot: 0 },
+    { id: 'd2', type: 'dc', x: 20, y: 0, rot: 0 },
+  ];
+  // aiming at a dc head -> that stitch
+  assert.deepEqual(pickBase(stitches, -20, -32, {}), { kind: 'stitch', id: 'd1' });
+  // aiming at the gap between the two dc heads -> a space of the two dc (no ch)
+  const sp = pickBase(stitches, 0, -32, {});
+  assert.equal(sp.kind, 'space');
+  assert.deepEqual(new Set(sp.ids), new Set(['d1', 'd2']));
+  // aiming at the chain head -> the chain itself (a valid base, not a space)
+  assert.deepEqual(pickBase(stitches, 0, 0, {}), { kind: 'stitch', id: 'c1' });
 });
 
-test('targetPoint returns the midpoint for a space target', () => {
-  store.reset();
-  store.setSymmetry({ order: 1, mirror: false });
-  const [a] = store.addStitch({ type: 'dc', x: -20, y: 40 });
-  const [b] = store.addStitch({ type: 'dc', x: 20, y: 40 });
-  assert.deepEqual(store.targetPoint({ kind: 'space', ids: [a, b] }), { x: 0, y: 40 });
+test('topOfStitch is the end of the post (base + height along rot)', () => {
+  assert.deepEqual(topOfStitch({ type: 'dc', x: 5, y: 0, rot: 0 }, {}), { x: 5, y: -32 });
 });
 
 test('setOrigin re-anchors the working position', () => {
@@ -352,11 +343,6 @@ test('addStitch stores a stretch length (len) on the seed', () => {
   // and the type renders at that length
   const built = buildStitchShapes('dc', {}, 60);
   assert.equal(built.height, 60);
-});
-
-test('targetPoint resolves a free point target', () => {
-  store.reset();
-  assert.deepEqual(store.targetPoint({ kind: 'point', x: 12, y: -7 }), { x: 12, y: -7 });
 });
 
 console.log(`\n  ${passed} tests passed\n`);

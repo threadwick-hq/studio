@@ -26,12 +26,12 @@ export function initInspector(store) {
     if (!s) return '—';
     return (STITCHES[s.type] && STITCHES[s.type].abbr) || (store.state.clusterMap[s.type] && store.state.clusterMap[s.type].abbr) || s.type;
   }
-  function describeTarget(t) {
-    if (!t) return 'free / start';
-    if (typeof t === 'string') return abbrOf(t); // legacy plain-id target
+  function describeBase(t) {
+    if (!t) return 'start';
+    if (typeof t === 'string') return abbrOf(t); // legacy plain-id base
     if (t.kind === 'space') return `space (${abbrOf(t.ids[0])} – ${abbrOf(t.ids[1])})`;
-    if (t.kind === 'stitch') return abbrOf(t.id);
-    return 'free';
+    if (t.kind === 'stitch') return `head of ${abbrOf(t.id)}`;
+    return 'start';
   }
 
   function render() {
@@ -49,10 +49,10 @@ export function initInspector(store) {
     box.appendChild(el('div', { class: 'insp-summary', text:
       `${sel.length} stitch${sel.length > 1 ? 'es' : ''} selected${grouped ? ' · symmetric' : ''}` }));
 
-    // connectivity (single selection): where it comes from and works into
+    // connectivity (single selection): its origin and what its base sits on
     if (sel.length === 1) {
       box.appendChild(el('div', { class: 'hint', html:
-        `<strong>from</strong> ${lead.origin ? abbrOf(lead.origin) : '—'} &nbsp;·&nbsp; <strong>into</strong> ${describeTarget(lead.target)}` }));
+        `<strong>origin</strong> ${lead.origin ? abbrOf(lead.origin) : '—'} &nbsp;·&nbsp; <strong>base</strong> ${describeBase(lead.target)}` }));
     }
 
     // type
