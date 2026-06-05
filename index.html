@@ -34,9 +34,9 @@
   <div id="toolbar">
     <div class="tgroup">
       <span class="tlabel">Tool</span>
-      <button class="tool" data-tool="select" id="tool-select" title="Select / move (V)">◻ Select</button>
-      <button class="tool" data-tool="place" id="tool-place" title="Place stitch (P)">✎ Place</button>
-      <button class="tool" data-tool="pan" id="tool-pan" title="Pan (H / hold space)">✋ Pan</button>
+      <button class="tool" data-tool="select" id="tool-select" title="Select / move (V) — the default mode">◻ Select</button>
+      <button class="tool" data-tool="place" id="tool-place" title="Insert stitches (or just pick a stitch / press its key)">✎ Insert</button>
+      <button class="tool" data-tool="pan" id="tool-pan" title="Pan (hold space)">✋ Pan</button>
     </div>
 
     <div class="tgroup">
@@ -98,7 +98,7 @@
       </section>
     </aside>
 
-    <section id="canvas-wrap" data-tool="place">
+    <section id="canvas-wrap" data-tool="select">
       <svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg>
       <div class="canvas-hint">Click to place · drag to move · scroll to zoom · hold space to pan</div>
     </section>

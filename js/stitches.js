@@ -121,6 +121,12 @@ export const STITCH_ORDER = ['ch', 'slst', 'sc', 'hdc', 'dc', 'tr', 'dtr'];
 // Round-0 "start" elements — the roots every stitch ultimately comes from.
 export const STARTS = ['mr', 'dmr', 'chring'];
 
+// Single-key shortcuts for entering insert mode with a given stitch/start.
+export const STITCH_KEYS = {
+  ch: 'c', slst: 'l', sc: 's', hdc: 'h', dc: 'd', tr: 't', dtr: 'e',
+  mr: 'm', dmr: 'b', chring: 'g',
+};
+
 export function getStitch(type) {
   return STITCHES[type] || null;
 }

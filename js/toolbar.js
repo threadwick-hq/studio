@@ -6,7 +6,7 @@ export function initToolbar(store, canvas, exporter) {
   const $ = (id) => document.getElementById(id);
 
   // ---- tools (canvas owns the active tool; we just reflect it) -------------
-  const toolButtons = [...document.querySelectorAll('[data-tool]')];
+  const toolButtons = [...document.querySelectorAll('button[data-tool]')];
   canvas.setOnToolChange((t) => toolButtons.forEach((b) => b.classList.toggle('active', b.dataset.tool === t)));
   toolButtons.forEach((b) => b.addEventListener('click', () => canvas.setTool(b.dataset.tool)));
 
@@ -80,7 +80,7 @@ export function initToolbar(store, canvas, exporter) {
     $('btn-redo').disabled = store.redoStack.length === 0;
   });
 
-  canvas.setTool('place');
+  canvas.setTool('select'); // Select is the default home mode
 
   return { setTool: (t) => canvas.setTool(t) };
 }

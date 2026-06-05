@@ -11,8 +11,10 @@ import { initClusterEditor } from './clusterEditor.js';
 import { initExport } from './export.js';
 import { initHelp } from './help.js';
 import { distributeRound } from './rounds.js';
+import { STITCH_KEYS } from './stitches.js';
 
 const SAVE_KEY = 'stitchgrid:autosave:v1';
+const KEY_TO_TYPE = Object.fromEntries(Object.entries(STITCH_KEYS).map(([type, key]) => [key, type]));
 
 const canvas = initCanvas(store);
 const clusterEditor = initClusterEditor(store);
@@ -87,11 +89,11 @@ window.addEventListener('keydown', (e) => {
   if (meta && k === 's') { e.preventDefault(); exporter.saveProject(); return; }
   if (meta) return;
   if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); store.deleteSelection(); return; }
-  if (e.key === 'Escape') { store.clearSelection(); return; }
+  if (e.key === 'Escape') { if (!canvas.escape()) store.clearSelection(); return; }
   if (e.key === ' ') { e.preventDefault(); canvas.setSpace(true); return; }
   if (k === 'v') { toolbar.setTool('select'); return; }
-  if (k === 'p') { toolbar.setTool('place'); return; }
-  if (k === 'h') { toolbar.setTool('pan'); return; }
+  // a stitch shortcut arms that stitch and enters insert mode
+  if (KEY_TO_TYPE[k]) { palette.choose(KEY_TO_TYPE[k]); return; }
   if (k === 'r') { store.rotateSelectionBy(e.shiftKey ? -15 : 15); return; }
   const n = e.shiftKey ? 8 : 2;
   if (e.key === 'ArrowLeft') { e.preventDefault(); store.moveSelectionBy(-n, 0); }

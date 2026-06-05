@@ -1,6 +1,6 @@
 // palette.js — left sidebar: base stitches, custom clusters, reusable motifs.
 
-import { STITCH_ORDER, STITCHES, STARTS } from './stitches.js';
+import { STITCH_ORDER, STITCHES, STARTS, STITCH_KEYS } from './stitches.js';
 import { glyphSVG } from './svg.js';
 import { el, clear } from './ui.js';
 
@@ -17,21 +17,29 @@ export function initPalette(store, canvas, clusterEditor) {
       dataset: { ref: refKey },
       onclick: () => choose(refKey),
     }, [el('span', { class: 'chip-glyph', html: glyphMarkup }), el('span', { class: 'chip-label', text: label })]);
+    const key = STITCH_KEYS[refKey];
+    if (key) c.appendChild(el('span', { class: 'chip-key', title: `Shortcut: ${key.toUpperCase()}`, text: key.toUpperCase() }));
     extra.forEach((e) => c.appendChild(e));
     return c;
   }
 
-  function choose(refKey) {
+  // enter=true begins inserting (the normal palette pick / shortcut); enter=false
+  // just sets the active stitch without leaving Select mode (startup / fallback).
+  function choose(refKey, enter = true) {
     activeRef = refKey;
     const [kind, ...rest] = refKey.split(':');
-    if (kind === 'motif') canvas.setPlacement({ kind: 'motif', ref: rest.join(':') });
-    else canvas.setPlacement({ kind: kind === 'cluster' ? 'cluster' : 'stitch', ref: kind === 'cluster' ? rest.join(':') : refKey });
+    if (kind === 'motif') canvas.setPlacement({ kind: 'motif', ref: rest.join(':') }, enter);
+    else canvas.setPlacement({ kind: kind === 'cluster' ? 'cluster' : 'stitch', ref: kind === 'cluster' ? rest.join(':') : refKey }, enter);
     highlight();
   }
 
+  // Only show a chip as active while actually inserting, so Select mode is clearly
+  // "no stitch armed".
   function highlight() {
-    document.querySelectorAll('#left .chip').forEach((c) => c.classList.toggle('active', c.dataset.ref === activeRef));
+    const insert = canvas.getTool() === 'place';
+    document.querySelectorAll('#left .chip').forEach((c) => c.classList.toggle('active', insert && c.dataset.ref === activeRef));
   }
+  canvas.setOnToolChange(() => highlight());
 
   // start (round-0) elements + base stitches are static
   const startsBox = document.getElementById('palette-starts');
@@ -96,12 +104,12 @@ export function initPalette(store, canvas, clusterEditor) {
     renderClusters();
     renderMotifs();
     // If the active placement's backing cluster/motif was deleted, fall back to dc.
-    if (activeRef.startsWith('cluster:') && !store.state.clusters.some((c) => 'cluster:' + c.id === activeRef)) choose('dc');
-    else if (activeRef.startsWith('motif:') && !store.state.motifs.some((m) => 'motif:' + m.id === activeRef)) choose('dc');
+    if (activeRef.startsWith('cluster:') && !store.state.clusters.some((c) => 'cluster:' + c.id === activeRef)) choose('dc', false);
+    else if (activeRef.startsWith('motif:') && !store.state.motifs.some((m) => 'motif:' + m.id === activeRef)) choose('dc', false);
   });
   renderClusters();
   renderMotifs();
-  choose('dc');
+  choose('dc', false);
 
   return { choose };
 }
