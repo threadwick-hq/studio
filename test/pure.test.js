@@ -266,4 +266,51 @@ test('placing at the centre makes a single stitch despite symmetry', () => {
   assert.equal(store.state.stitches.length, 1);
 });
 
+test('addStitch records origin/target on the seed', () => {
+  store.reset();
+  store.setSymmetry({ order: 1, mirror: false });
+  const [a] = store.addStitch({ type: 'dc', x: 40, y: 0, origin: 'src', target: 'tgt' });
+  const st = store.byId(a);
+  assert.equal(st.origin, 'src');
+  assert.equal(st.target, 'tgt');
+});
+
+test('consecutive placement chains origin to the last-placed stitch', () => {
+  store.reset();
+  store.setSymmetry({ order: 1, mirror: false });
+  const [a] = store.addStitch({ type: 'dc', x: 40, y: 0, origin: store.currentOriginId() });
+  const [b] = store.addStitch({ type: 'dc', x: 50, y: 10, origin: store.currentOriginId() });
+  assert.equal(store.byId(a).origin, null, 'first has no prior stitch');
+  assert.equal(store.byId(b).origin, a, 'second chains from the first');
+  assert.equal(store.currentOriginId(), b, 'working position is the latest stitch');
+});
+
+test('symmetric copies do not carry the seed connectivity', () => {
+  store.reset();
+  store.setSymmetry({ order: 4, mirror: false });
+  const ids = store.addStitch({ type: 'dc', x: 60, y: 0, origin: 'src', target: 'tgt' });
+  assert.equal(store.byId(ids[0]).origin, 'src');
+  assert.equal(store.byId(ids[1]).origin, null);
+  assert.equal(store.byId(ids[1]).target, null);
+});
+
+test('suggestTarget picks the nearest inner-round stitch', () => {
+  store.reset();
+  store.setSymmetry({ order: 1, mirror: false });
+  const [inner] = store.addStitch({ type: 'dc', x: 30, y: 0 }); // r=30
+  store.addStitch({ type: 'dc', x: 200, y: 0 }); // far away, r=200
+  assert.equal(store.suggestTarget(60, 0), inner, 'targets the close inner stitch');
+  assert.equal(store.suggestTarget(10, 0), null, 'nothing inner of r=10');
+});
+
+test('currentOriginId clears when the working stitch is deleted', () => {
+  store.reset();
+  store.setSymmetry({ order: 1, mirror: false });
+  const [a] = store.addStitch({ type: 'dc', x: 40, y: 0 });
+  assert.equal(store.currentOriginId(), a);
+  store.setSelection([a]);
+  store.deleteSelection();
+  assert.equal(store.currentOriginId(), null, 'dangling working position is dropped');
+});
+
 console.log(`\n  ${passed} tests passed\n`);

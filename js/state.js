@@ -21,7 +21,7 @@ function defaultState() {
     rounds: defaultRounds(),
     clusters: [], // user-defined parametric clusters {id,name,abbr,base,legs,joinTop,joinBottom,spread}
     motifs: [], // reusable stamps {id,name,stitches:[{type,dx,dy,rot,mirror,color}]}
-    stitches: [], // {id, group, type, x, y, rot, mirror, color, round}
+    stitches: [], // {id, group, type, x, y, rot, mirror, color, round, origin, target}
     groups: {}, // groupId -> the symmetry it was created with {order,mirror,axis}
   };
 }
@@ -35,6 +35,7 @@ class Store {
     this.listeners = new Set();
     this.undoStack = [];
     this.redoStack = [];
+    this.lastPlacedId = null; // transient: the working position (default next origin)
     this._rebuildClusterMap();
   }
 
@@ -136,6 +137,28 @@ class Store {
     return this.state.settings.snap.autoRadial ? radialRotation(x, y) : 0;
   }
 
+  // ---- connectivity helpers ----------------------------------------------
+  // The current "origin" for the next stitch — the last one placed (the working
+  // position), if it still exists. Validates against deletes/undo.
+  currentOriginId() {
+    if (this.lastPlacedId && this.byId(this.lastPlacedId)) return this.lastPlacedId;
+    this.lastPlacedId = null;
+    return null;
+  }
+  // Best-guess target for a stitch dropped at (x,y): the nearest stitch in an
+  // inner round (smaller radius) — i.e. the one you'd insert the hook into.
+  // Heuristic for now; the procedural work-mode will let you pick it explicitly.
+  suggestTarget(x, y) {
+    const r = Math.hypot(x, y);
+    let best = null, bestD = Infinity;
+    for (const s of this.state.stitches) {
+      if (Math.hypot(s.x, s.y) >= r - 4) continue; // must be in a lower/inner round
+      const d = Math.hypot(s.x - x, s.y - y);
+      if (d < bestD) { bestD = d; best = s; }
+    }
+    return best && bestD <= 70 ? best.id : null;
+  }
+
   // ---- stitches -----------------------------------------------------------
   // Regenerate every sibling of `seed`'s group from `seed`'s current transform.
   // Uses the symmetry the GROUP was created with (not the live global setting),
@@ -157,6 +180,7 @@ class Store {
         id: uid('st'), group: seed.group,
         type: seed.type, color: seed.color, round: seed.round,
         x: o.x, y: o.y, rot: o.rot, mirror: o.mirror,
+        origin: null, target: null,
       });
     }
   }
@@ -167,6 +191,10 @@ class Store {
     const mirror = !!params.mirror;
     const color = params.color ?? null;
     const round = params.round ?? null;
+    // Connectivity: where this stitch comes from (origin) and what it's worked
+    // into (target). Stored on the seed; symmetric copies inherit it implicitly.
+    const origin = params.origin ?? null;
+    const target = params.target ?? null;
     const sym = this.state.settings.symmetry;
     // A stitch at the exact centre is the symmetry fixed point — place a single
     // one (the magic ring / round-0 start), not N overlapping copies.
@@ -176,19 +204,23 @@ class Store {
     this.transact('add stitch', () => {
       if (!useSym) {
         const id = uid('st');
-        this.state.stitches.push({ id, group: null, type, x, y, rot, mirror, color, round });
+        this.state.stitches.push({ id, group: null, type, x, y, rot, mirror, color, round, origin, target });
         ids.push(id);
       } else {
         const group = uid('grp');
         this.state.groups[group] = { order: sym.order, mirror: sym.mirror, axis: sym.axis };
         const orbit = symmetryOrbit({ x, y, rot, mirror }, sym);
-        for (const o of orbit) {
+        orbit.forEach((o, i) => {
           const id = uid('st');
-          this.state.stitches.push({ id, group, type, x: o.x, y: o.y, rot: o.rot, mirror: o.mirror, color, round });
+          this.state.stitches.push({
+            id, group, type, x: o.x, y: o.y, rot: o.rot, mirror: o.mirror, color, round,
+            origin: i === 0 ? origin : null, target: i === 0 ? target : null,
+          });
           ids.push(id);
-        }
+        });
       }
     });
+    this.lastPlacedId = ids[0] ?? this.lastPlacedId; // chain head for the next stitch
     if (select) this.setSelection(ids);
     return ids;
   }
@@ -204,6 +236,7 @@ class Store {
           type: p.type, x: p.x, y: p.y,
           rot: p.rot ?? this.defaultRotFor(p.x, p.y),
           mirror: !!p.mirror, color: p.color ?? null, round: p.round ?? null,
+          origin: p.origin ?? null, target: p.target ?? null,
         });
         ids.push(id);
       }

@@ -13,6 +13,17 @@ import { chartInner, contentBounds, buildStitchShapes, shapesMarkup } from './sv
 
 const NS = 'http://www.w3.org/2000/svg';
 const GHOST = '#2f7bff';
+const ORIGIN = '#1f9d55'; // where the next stitch comes from
+const TARGET = '#e8830c'; // what it's worked into
+
+// A coloured ring + label drawn around a stitch, to make origin/target obvious.
+function halo(s, color, label) {
+  return (
+    `<circle cx="${round(s.x)}" cy="${round(s.y)}" r="14" fill="${color}" fill-opacity="0.1" stroke="${color}" stroke-width="2.8"/>` +
+    `<text x="${round(s.x)}" y="${round(s.y) - 18}" text-anchor="middle" font-size="10" font-weight="700"` +
+    ` fill="${color}" paint-order="stroke" stroke="#fff" stroke-width="3">${label}</text>`
+  );
+}
 
 export function initCanvas(store) {
   const svg = document.getElementById('canvas');
@@ -81,23 +92,37 @@ export function initCanvas(store) {
     const rot = store.defaultRotFor(p.x, p.y);
     const sym = store.state.settings.symmetry;
     const atCenter = Math.hypot(p.x, p.y) < 1e-6;
+    const isStitch = placement.kind !== 'motif';
+    // Connectivity: origin (where we come from) + target (what we work into).
+    const originSt = isStitch ? store.byId(store.currentOriginId()) : null;
+    const targetSt = isStitch && !atCenter ? store.byId(store.suggestTarget(p.x, p.y)) : null;
     // Preview where symmetry will copy this stitch, so it's obvious before clicking.
-    const useSym = placement.kind !== 'motif' && !atCenter && (sym.order > 1 || sym.mirror);
+    const useSym = isStitch && !atCenter && (sym.order > 1 || sym.mirror);
     const orbit = useSym
       ? symmetryOrbit({ x: p.x, y: p.y, rot, mirror: false }, sym)
       : [{ x: p.x, y: p.y, rot, mirror: false }];
-    let out = '';
-    if (placement.kind !== 'motif') {
+    let links = '', ghost = '', marks = '', halos = '';
+    if (originSt) {
+      links += `<line x1="${round(originSt.x)}" y1="${round(originSt.y)}" x2="${round(p.x)}" y2="${round(p.y)}" stroke="${ORIGIN}" stroke-width="2.2" stroke-dasharray="5 3" opacity="0.85"/>`;
+      halos += halo(originSt, ORIGIN, 'origin');
+    }
+    if (targetSt) {
+      if (targetSt !== originSt) {
+        links += `<line x1="${round(p.x)}" y1="${round(p.y)}" x2="${round(targetSt.x)}" y2="${round(targetSt.y)}" stroke="${TARGET}" stroke-width="2.2" stroke-dasharray="2 3" opacity="0.85"/>`;
+      }
+      halos += halo(targetSt, TARGET, 'into');
+    }
+    if (isStitch) {
       const inner = shapesMarkup(buildStitchShapes(placement.ref, store.state.clusterMap).shapes, GHOST);
       orbit.forEach((o, i) => {
         const m = o.mirror ? ' scale(-1,1)' : '';
-        out += `<g transform="translate(${round(o.x)} ${round(o.y)}) rotate(${round(o.rot)})${m}" opacity="${i === 0 ? 0.55 : 0.26}">${inner}</g>`;
+        ghost += `<g transform="translate(${round(o.x)} ${round(o.y)}) rotate(${round(o.rot)})${m}" opacity="${i === 0 ? 0.55 : 0.26}">${inner}</g>`;
       });
     }
     for (const o of orbit) {
-      out += `<circle cx="${round(o.x)}" cy="${round(o.y)}" r="3.2" fill="none" stroke="${GHOST}" stroke-width="1.2"/>`;
+      marks += `<circle cx="${round(o.x)}" cy="${round(o.y)}" r="3.2" fill="none" stroke="${GHOST}" stroke-width="1.2"/>`;
     }
-    cursorLayer.innerHTML = out;
+    cursorLayer.innerHTML = links + ghost + marks + halos;
   }
 
   // ---- pointer interaction -------------------------------------------------
@@ -110,8 +135,19 @@ export function initCanvas(store) {
     const u = toUser(e.clientX, e.clientY);
     if (tool === 'place') {
       const p = store.snapPoint(u.x, u.y);
-      if (placement.kind === 'motif') store.placeMotif(placement.ref, p.x, p.y);
-      else store.addStitch({ type: placement.ref, x: p.x, y: p.y });
+      if (placement.kind === 'motif') {
+        store.placeMotif(placement.ref, p.x, p.y);
+      } else {
+        // Chain from the last-placed stitch; target the nearest inner stitch.
+        // Don't select while placing — keeps rapid placement clean and lets the
+        // origin/target highlight show (selection would mask the origin halo).
+        store.addStitch({
+          type: placement.ref, x: p.x, y: p.y,
+          origin: store.currentOriginId(),
+          target: store.suggestTarget(p.x, p.y),
+        }, { select: false });
+      }
+      updateGhost(u); // refresh origin/target halos for the new chain head
       return;
     }
     // select tool
