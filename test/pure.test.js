@@ -313,4 +313,35 @@ test('currentOriginId clears when the working stitch is deleted', () => {
   assert.equal(store.currentOriginId(), null, 'dangling working position is dropped');
 });
 
+test('pickTarget distinguishes a stitch from a space between two stitches', () => {
+  store.reset();
+  store.setSymmetry({ order: 1, mirror: false });
+  const [a] = store.addStitch({ type: 'dc', x: -20, y: 40 });
+  const [b] = store.addStitch({ type: 'dc', x: 20, y: 40 });
+  const onB = store.pickTarget(20, 84);
+  assert.equal(onB.kind, 'stitch');
+  assert.equal(onB.id, b);
+  const between = store.pickTarget(0, 84);
+  assert.equal(between.kind, 'space');
+  assert.deepEqual(new Set(between.ids), new Set([a, b]));
+});
+
+test('targetPoint returns the midpoint for a space target', () => {
+  store.reset();
+  store.setSymmetry({ order: 1, mirror: false });
+  const [a] = store.addStitch({ type: 'dc', x: -20, y: 40 });
+  const [b] = store.addStitch({ type: 'dc', x: 20, y: 40 });
+  assert.deepEqual(store.targetPoint({ kind: 'space', ids: [a, b] }), { x: 0, y: 40 });
+});
+
+test('setOrigin re-anchors the working position', () => {
+  store.reset();
+  store.setSymmetry({ order: 1, mirror: false });
+  const [a] = store.addStitch({ type: 'dc', x: 30, y: 0 });
+  const [b] = store.addStitch({ type: 'dc', x: 60, y: 0 });
+  assert.equal(store.currentOriginId(), b);
+  store.setOrigin(a);
+  assert.equal(store.currentOriginId(), a);
+});
+
 console.log(`\n  ${passed} tests passed\n`);

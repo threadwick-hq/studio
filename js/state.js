@@ -145,9 +145,7 @@ class Store {
     this.lastPlacedId = null;
     return null;
   }
-  // Best-guess target for a stitch dropped at (x,y): the nearest stitch in an
-  // inner round (smaller radius) — i.e. the one you'd insert the hook into.
-  // Heuristic for now; the procedural work-mode will let you pick it explicitly.
+  // Best-guess target stitch id for a point: the nearest inner-round stitch.
   suggestTarget(x, y) {
     const r = Math.hypot(x, y);
     let best = null, bestD = Infinity;
@@ -157,6 +155,40 @@ class Store {
       if (d < bestD) { bestD = d; best = s; }
     }
     return best && bestD <= 70 ? best.id : null;
+  }
+  // Resolve what a stitch dropped at (x,y) is worked into: a specific stitch, the
+  // space between two adjacent inner stitches, or null. Aiming at the gap between
+  // two stitches yields a space; aiming at a stitch yields that stitch.
+  pickTarget(x, y) {
+    const r = Math.hypot(x, y);
+    const inner = this.state.stitches
+      .filter((s) => Math.hypot(s.x, s.y) < r - 4)
+      .map((s) => ({ s, d: Math.hypot(s.x - x, s.y - y) }))
+      .sort((a, b) => a.d - b.d);
+    if (!inner.length || inner[0].d > 90) return null;
+    const a = inner[0], b = inner[1];
+    if (b) {
+      const mx = (a.s.x + b.s.x) / 2, my = (a.s.y + b.s.y) / 2;
+      const adjacent = Math.hypot(a.s.x - b.s.x, a.s.y - b.s.y) < 90;
+      if (adjacent && Math.hypot(mx - x, my - y) < a.d) {
+        return { kind: 'space', ids: [a.s.id, b.s.id] };
+      }
+    }
+    return { kind: 'stitch', id: a.s.id };
+  }
+  // The chart point a target resolves to (a stitch's anchor, or a space midpoint).
+  targetPoint(target) {
+    if (!target) return null;
+    if (target.kind === 'stitch') { const s = this.byId(target.id); return s ? { x: s.x, y: s.y } : null; }
+    if (target.kind === 'space') {
+      const a = this.byId(target.ids[0]), b = this.byId(target.ids[1]);
+      return a && b ? { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } : null;
+    }
+    return null;
+  }
+  // Re-anchor the working position (origin for the next stitch) to a stitch.
+  setOrigin(id) {
+    if (id && this.byId(id)) { this.lastPlacedId = id; this.emit(); }
   }
 
   // ---- stitches -----------------------------------------------------------

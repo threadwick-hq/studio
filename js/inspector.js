@@ -21,6 +21,19 @@ export function initInspector(store) {
     return [...store.selection].map((id) => store.byId(id)).filter(Boolean);
   }
 
+  function abbrOf(id) {
+    const s = store.byId(id);
+    if (!s) return '—';
+    return (STITCHES[s.type] && STITCHES[s.type].abbr) || (store.state.clusterMap[s.type] && store.state.clusterMap[s.type].abbr) || s.type;
+  }
+  function describeTarget(t) {
+    if (!t) return 'free / start';
+    if (typeof t === 'string') return abbrOf(t); // legacy plain-id target
+    if (t.kind === 'space') return `space (${abbrOf(t.ids[0])} – ${abbrOf(t.ids[1])})`;
+    if (t.kind === 'stitch') return abbrOf(t.id);
+    return 'free';
+  }
+
   function render() {
     clear(box);
     const sel = selectedStitches();
@@ -35,6 +48,12 @@ export function initInspector(store) {
 
     box.appendChild(el('div', { class: 'insp-summary', text:
       `${sel.length} stitch${sel.length > 1 ? 'es' : ''} selected${grouped ? ' · symmetric' : ''}` }));
+
+    // connectivity (single selection): where it comes from and works into
+    if (sel.length === 1) {
+      box.appendChild(el('div', { class: 'hint', html:
+        `<strong>from</strong> ${lead.origin ? abbrOf(lead.origin) : '—'} &nbsp;·&nbsp; <strong>into</strong> ${describeTarget(lead.target)}` }));
+    }
 
     // type
     const typeSel = el('select', { class: 'field',
