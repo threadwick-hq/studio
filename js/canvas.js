@@ -141,6 +141,13 @@ export function initCanvas(store) {
     if (!pt) return '';
     return base.kind === 'space' ? diamond(pt, TARGET) : dot(pt, TARGET);
   }
+  // Re-draw a placed stitch in a highlight colour — used to flag the origin
+  // stitch (the one the next stitch comes from) in light blue.
+  function stitchGlyphAt(st, color) {
+    const { shapes } = buildStitchShapes(st.type, cmap(), st.len);
+    const m = st.mirror ? ' scale(-1,1)' : '';
+    return `<g transform="translate(${round(st.x)} ${round(st.y)}) rotate(${round(st.rot || 0)})${m}">${shapesMarkup(shapes, color)}</g>`;
+  }
 
   function updateGhost(u) {
     lastU = u;
@@ -156,33 +163,34 @@ export function initCanvas(store) {
     }
 
     const originSt = store.byId(store.currentOriginId());
-    const originDot = originSt ? dot(topOfStitch(originSt, cmap()), ORIGIN) : '';
+    const originGlyph = originSt ? stitchGlyphAt(originSt, ORIGIN) : ''; // recolour the origin light blue
     const reticle = (color) => `<circle cx="${round(p.x)}" cy="${round(p.y)}" r="3" fill="none" stroke="${color}" stroke-width="1.4"/>`;
 
     if (stage === 'origin') {
-      // Picking where we come from: highlight the candidate origin under cursor.
+      // Picking where we come from: preview the candidate origin in light blue.
       const cand = nearestStitch(store.state.stitches, p.x, p.y, cmap());
-      cursorLayer.innerHTML = (cand ? dot(topOfStitch(cand, cmap()), ORIGIN, 5) : '') + reticle(ORIGIN);
+      cursorLayer.innerHTML = (cand ? stitchGlyphAt(cand, ORIGIN) : '') + reticle(ORIGIN);
       return;
     }
     if (stage === 'base') {
       // Picking the base: highlight the candidate stitch head / space.
       const base = pickBase(store.state.stitches, p.x, p.y, cmap());
-      cursorLayer.innerHTML = reticle(TARGET) + baseMark(base) + originDot;
+      cursorLayer.innerHTML = originGlyph + reticle(TARGET) + baseMark(base);
       return;
     }
 
     // stage 'head': base is locked; draw the stitch as a line from base to cursor.
     const base = basePoint(lockedBase);
-    if (!base) { cursorLayer.innerHTML = originDot; return; }
+    if (!base) { cursorLayer.innerHTML = originGlyph; return; }
     const dx = p.x - base.x, dy = p.y - base.y;
     const len = Math.max(2, Math.hypot(dx, dy));
     const rot = (Math.atan2(dx, -dy) * 180) / Math.PI;
     const baseAtCenter = Math.hypot(base.x, base.y) < 1e-6;
     const useSym = (sym.order > 1 || sym.mirror) && !(baseAtCenter && len < 0.001);
     const orbit = useSym ? symmetryOrbit({ x: base.x, y: base.y, rot, mirror: false }, sym) : [{ x: base.x, y: base.y, rot, mirror: false }];
-    const linkLine = originSt ? link(topOfStitch(originSt, cmap()).x, topOfStitch(originSt, cmap()).y, base.x, base.y, ORIGIN, '4 3') : '';
-    cursorLayer.innerHTML = linkLine + ghostMarkup(orbit, len) + originDot + dot(base, TARGET);
+    const oh = originSt ? topOfStitch(originSt, cmap()) : null;
+    const linkLine = oh ? link(oh.x, oh.y, base.x, base.y, ORIGIN, '4 3') : '';
+    cursorLayer.innerHTML = linkLine + originGlyph + ghostMarkup(orbit, len) + dot(base, TARGET);
   }
 
   function placementName() {

@@ -276,6 +276,11 @@ function connectionsSVG(stitches, selection, clusterMap) {
   const mk = (pt, color, label) =>
     `<circle cx="${round(pt.x)}" cy="${round(pt.y)}" r="3.5" fill="${color}" fill-opacity="0.5" stroke="${color}" stroke-width="1.6"/>` +
     `<text x="${round(pt.x) + 6}" y="${round(pt.y) + 3}" font-size="9" font-weight="700" fill="${color}" paint-order="stroke" stroke="#fff" stroke-width="2.5">${label}</text>`;
+  const glyphAt = (st, color) => {
+    const { shapes } = buildStitchShapes(st.type, clusterMap, st.len);
+    const m = st.mirror ? ' scale(-1,1)' : '';
+    return `<g transform="translate(${round(st.x)} ${round(st.y)}) rotate(${round(st.rot || 0)})${m}">${shapesMarkup(shapes, color)}</g>`;
+  };
   let out = '<g class="connections" pointer-events="none">';
   for (const st of stitches) {
     if (!selection.has(st.id)) continue;
@@ -284,6 +289,7 @@ function connectionsSVG(stitches, selection, clusterMap) {
     const origin = st.origin && byId.get(st.origin);
     if (origin) {
       const oh = topOfStitch(origin, clusterMap);
+      out += glyphAt(origin, '#5cb3ff'); // recolour the origin stitch light blue
       out += `<line x1="${round(oh.x)}" y1="${round(oh.y)}" x2="${round(base.x)}" y2="${round(base.y)}" stroke="#5cb3ff" stroke-width="1.4" stroke-dasharray="4 3" opacity="0.8"/>`;
       out += mk(oh, '#5cb3ff', 'origin');
     }
