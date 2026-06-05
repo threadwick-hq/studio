@@ -179,6 +179,7 @@ class Store {
   // The chart point a target resolves to (a stitch's anchor, or a space midpoint).
   targetPoint(target) {
     if (!target) return null;
+    if (target.kind === 'point') return { x: target.x, y: target.y };
     if (target.kind === 'stitch') { const s = this.byId(target.id); return s ? { x: s.x, y: s.y } : null; }
     if (target.kind === 'space') {
       const a = this.byId(target.ids[0]), b = this.byId(target.ids[1]);
@@ -210,7 +211,7 @@ class Store {
       const o = orbit[i];
       this.state.stitches.push({
         id: uid('st'), group: seed.group,
-        type: seed.type, color: seed.color, round: seed.round,
+        type: seed.type, color: seed.color, round: seed.round, len: seed.len ?? null,
         x: o.x, y: o.y, rot: o.rot, mirror: o.mirror,
         origin: null, target: null,
       });
@@ -227,16 +228,19 @@ class Store {
     // into (target). Stored on the seed; symmetric copies inherit it implicitly.
     const origin = params.origin ?? null;
     const target = params.target ?? null;
+    const len = params.len ?? null; // post length (stretch); null = the type's default
     const sym = this.state.settings.symmetry;
-    // A stitch at the exact centre is the symmetry fixed point — place a single
-    // one (the magic ring / round-0 start), not N overlapping copies.
+    // A centre *point* (magic ring / dot) maps to itself under rotation, so place
+    // a single one — not N overlapping copies. A *post* worked into the centre,
+    // though, fans out (the orbit rotates its angle), so keep its symmetry.
     const atCenter = Math.hypot(x, y) < 1e-6;
-    const useSym = symmetry && !atCenter && (sym.order > 1 || sym.mirror);
+    const isFixedPoint = atCenter && !len;
+    const useSym = symmetry && !isFixedPoint && (sym.order > 1 || sym.mirror);
     const ids = [];
     this.transact('add stitch', () => {
       if (!useSym) {
         const id = uid('st');
-        this.state.stitches.push({ id, group: null, type, x, y, rot, mirror, color, round, origin, target });
+        this.state.stitches.push({ id, group: null, type, x, y, rot, mirror, color, round, origin, target, len });
         ids.push(id);
       } else {
         const group = uid('grp');
@@ -245,7 +249,7 @@ class Store {
         orbit.forEach((o, i) => {
           const id = uid('st');
           this.state.stitches.push({
-            id, group, type, x: o.x, y: o.y, rot: o.rot, mirror: o.mirror, color, round,
+            id, group, type, x: o.x, y: o.y, rot: o.rot, mirror: o.mirror, color, round, len,
             origin: i === 0 ? origin : null, target: i === 0 ? target : null,
           });
           ids.push(id);
@@ -268,7 +272,7 @@ class Store {
           type: p.type, x: p.x, y: p.y,
           rot: p.rot ?? this.defaultRotFor(p.x, p.y),
           mirror: !!p.mirror, color: p.color ?? null, round: p.round ?? null,
-          origin: p.origin ?? null, target: p.target ?? null,
+          origin: p.origin ?? null, target: p.target ?? null, len: p.len ?? null,
         });
         ids.push(id);
       }

@@ -344,4 +344,19 @@ test('setOrigin re-anchors the working position', () => {
   assert.equal(store.currentOriginId(), a);
 });
 
+test('addStitch stores a stretch length (len) on the seed', () => {
+  store.reset();
+  store.setSymmetry({ order: 1, mirror: false });
+  const [a] = store.addStitch({ type: 'dc', x: 0, y: 0, len: 60 });
+  assert.equal(store.byId(a).len, 60);
+  // and the type renders at that length
+  const built = buildStitchShapes('dc', {}, 60);
+  assert.equal(built.height, 60);
+});
+
+test('targetPoint resolves a free point target', () => {
+  store.reset();
+  assert.deepEqual(store.targetPoint({ kind: 'point', x: 12, y: -7 }), { x: 12, y: -7 });
+});
+
 console.log(`\n  ${passed} tests passed\n`);

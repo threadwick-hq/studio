@@ -44,11 +44,11 @@ export function shapesMarkup(shapes, color = INK) {
 
 // ---- resolving a stitch type to primitives --------------------------------
 
-export function buildStitchShapes(type, clusterMap) {
-  if (STITCHES[type]) return STITCHES[type].build();
+export function buildStitchShapes(type, clusterMap, len) {
+  if (STITCHES[type]) return STITCHES[type].build(len);
   const def = clusterMap && clusterMap[type];
   if (def) return buildCluster(def);
-  return STITCHES.dc.build();
+  return STITCHES.dc.build(len);
 }
 
 export function labelFor(type, clusterMap) {
@@ -64,7 +64,7 @@ export function labelFor(type, clusterMap) {
 // ---- a single placed stitch ----------------------------------------------
 
 function stitchToSVG(st, clusterMap, { interactive } = {}) {
-  const { shapes, height } = buildStitchShapes(st.type, clusterMap);
+  const { shapes, height } = buildStitchShapes(st.type, clusterMap, st.len);
   const color = st.color || INK;
   const inner = shapes.map((s) => shapeToSVG(s, color)).join('');
   const mirror = st.mirror ? ' scale(-1,1)' : '';
@@ -142,7 +142,7 @@ function shapesBBox(shapes) {
 // World-space bounds of a placed stitch: its true local bbox (so wide shells
 // and decreases are measured correctly), transformed by mirror + rotation.
 function stitchExtent(st, clusterMap) {
-  const { shapes, height } = buildStitchShapes(st.type, clusterMap);
+  const { shapes, height } = buildStitchShapes(st.type, clusterMap, st.len);
   let lb = shapesBBox(shapes);
   if (lb.minX > lb.maxX) lb = { minX: -8, minY: -Math.max(height, 12), maxX: 8, maxY: 6 };
   const rot = st.rot || 0;

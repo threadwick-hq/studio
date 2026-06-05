@@ -142,6 +142,13 @@ body {
   font-size: 11px; color: var(--muted); background: rgba(255, 255, 255, .85);
   padding: 5px 12px; border-radius: 20px; border: 1px solid var(--line); pointer-events: none;
 }
+.step-toast {
+  position: absolute; left: 50%; top: 14px; transform: translateX(-50%);
+  font-size: 12px; font-weight: 700; letter-spacing: .01em; color: #fff;
+  background: #1f2937; padding: 7px 16px; border-radius: 20px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, .18); pointer-events: none; z-index: 5;
+}
+.step-toast[hidden] { display: none; }
 .stitch .hit { pointer-events: all; } /* invisibility is inline (fill:none) */
 .stitch { cursor: pointer; }
 #canvas .guides, #canvas .selection, #canvas .anchors, #canvas .cursor-layer { pointer-events: none; }

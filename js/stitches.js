@@ -52,9 +52,9 @@ export const STITCHES = {
     name: 'Single crochet',
     abbr: 'sc',
     category: 'basic',
-    // A cross "+": a short vertical with a horizontal bar through the middle.
-    build: () => {
-      const h = 16;
+    // A cross "+": a vertical with a horizontal bar through the middle.
+    build: (len) => {
+      const h = len ?? 16;
       return {
         shapes: [
           { k: 'line', x1: 0, y1: 0, x2: 0, y2: -h },
@@ -68,25 +68,25 @@ export const STITCHES = {
     name: 'Half double crochet',
     abbr: 'hdc',
     category: 'basic',
-    build: () => ({ shapes: postShapes(23, 0), height: 23 }),
+    build: (len) => ({ shapes: postShapes(len ?? 23, 0), height: len ?? 23 }),
   },
   dc: {
     name: 'Double crochet',
     abbr: 'dc',
     category: 'basic',
-    build: () => ({ shapes: postShapes(32, 1), height: 32 }),
+    build: (len) => ({ shapes: postShapes(len ?? 32, 1), height: len ?? 32 }),
   },
   tr: {
     name: 'Treble crochet',
     abbr: 'tr',
     category: 'basic',
-    build: () => ({ shapes: postShapes(40, 2), height: 40 }),
+    build: (len) => ({ shapes: postShapes(len ?? 40, 2), height: len ?? 40 }),
   },
   dtr: {
     name: 'Double treble',
     abbr: 'dtr',
     category: 'basic',
-    build: () => ({ shapes: postShapes(48, 3), height: 48 }),
+    build: (len) => ({ shapes: postShapes(len ?? 48, 3), height: len ?? 48 }),
   },
   mr: {
     name: 'Magic ring',

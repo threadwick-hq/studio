@@ -8,37 +8,28 @@
 
 import { clamp, round } from './util.js';
 import { symmetryOrbit } from './symmetry.js';
+import { rotatePoint } from './geometry.js';
 import { ringRadii } from './rounds.js';
 import { STARTS, STITCHES } from './stitches.js';
 import { chartInner, contentBounds, buildStitchShapes, shapesMarkup } from './svg.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const GHOST = '#2f7bff';
-const ORIGIN = '#1f9d55'; // where the next stitch comes from
-const TARGET = '#e8830c'; // what it's worked into
+const ORIGIN = '#5cb3ff'; // light blue — where the stitch comes from
+const TARGET = '#e8830c'; // orange — what it's worked into (the base)
 
-// A coloured ring + label drawn around a stitch, to make origin/target obvious.
-function halo(s, color, label) {
-  return (
-    `<circle cx="${round(s.x)}" cy="${round(s.y)}" r="14" fill="${color}" fill-opacity="0.1" stroke="${color}" stroke-width="2.8"/>` +
-    `<text x="${round(s.x)}" y="${round(s.y) - 18}" text-anchor="middle" font-size="10" font-weight="700"` +
-    ` fill="${color}" paint-order="stroke" stroke="#fff" stroke-width="3">${label}</text>`
-  );
+// Small markers (≈quarter the old size) for origin / target.
+function dot(pt, color, r = 3.5) {
+  return `<circle cx="${round(pt.x)}" cy="${round(pt.y)}" r="${r}" fill="${color}" fill-opacity="0.35" stroke="${color}" stroke-width="1.6"/>`;
 }
-
-// A diamond + label marking a space target (the gap between two stitches).
-function spaceMark(pt, color, label) {
+function diamond(pt, color, s = 4.5) {
   const x = round(pt.x), y = round(pt.y);
-  return (
-    `<path d="M ${x - 7} ${y} L ${x} ${y - 7} L ${x + 7} ${y} L ${x} ${y + 7} Z" fill="${color}" fill-opacity="0.12" stroke="${color}" stroke-width="2.6"/>` +
-    `<text x="${x}" y="${y - 13}" text-anchor="middle" font-size="10" font-weight="700"` +
-    ` fill="${color}" paint-order="stroke" stroke="#fff" stroke-width="3">${label}</text>`
-  );
+  return `<path d="M ${x - s} ${y} L ${x} ${y - s} L ${x + s} ${y} L ${x} ${y + s} Z" fill="${color}" fill-opacity="0.3" stroke="${color}" stroke-width="1.6"/>`;
 }
 
 // A dashed connector between two chart points.
 function link(x1, y1, x2, y2, color, dash) {
-  return `<line x1="${round(x1)}" y1="${round(y1)}" x2="${round(x2)}" y2="${round(y2)}" stroke="${color}" stroke-width="2.2" stroke-dasharray="${dash}" opacity="0.85"/>`;
+  return `<line x1="${round(x1)}" y1="${round(y1)}" x2="${round(x2)}" y2="${round(y2)}" stroke="${color}" stroke-width="1.6" stroke-dasharray="${dash}" opacity="0.8"/>`;
 }
 
 export function initCanvas(store) {
@@ -55,22 +46,73 @@ export function initCanvas(store) {
   let panning = null;
   let marquee = null; // { startU, additive, base:Set, moved }
   let spaceDown = false;
-  // Insert (two-click) flow: 'target' awaits the click on what to crochet into,
-  // 'position' awaits the click that places the stitch. lockedTarget holds the
-  // chosen target between the two clicks.
+  // Insert flow stages: 'origin' (pick where you come from), 'target' (pick what
+  // to crochet into = the stitch's base), 'position' (pick the top → locks it in).
   let stage = 'target';
   let lockedTarget = null;
   let lastU = { x: 0, y: 0 };
   const hintEl = document.querySelector('.canvas-hint');
+  const toastEl = document.getElementById('step-toast');
 
   // A start (round-0) element or a motif places in one click — there's nothing
-  // to crochet into — so they skip the two-click target step.
+  // to crochet into — so they skip the target/position steps.
   const isOneClick = () =>
     placement.kind === 'motif' || (placement.kind === 'stitch' && STARTS.includes(placement.ref));
 
+  // Where a target resolves to in the chart — the stitch's TOP (where the hook
+  // goes in), a space's midpoint of tops, or a free point. The new stitch's base
+  // is pinned here, and the stitch is drawn as a line from here to your click.
+  function topOf(st) {
+    const h = buildStitchShapes(st.type, store.state.clusterMap, st.len).height || 0;
+    const p = rotatePoint(0, -h, st.rot || 0);
+    return { x: st.x + p.x, y: st.y + p.y };
+  }
+  function insertionPoint(target) {
+    if (!target) return null;
+    if (target.kind === 'point') return { x: target.x, y: target.y };
+    if (target.kind === 'stitch') { const s = store.byId(target.id); return s ? topOf(s) : null; }
+    if (target.kind === 'space') {
+      const a = store.byId(target.ids[0]), b = store.byId(target.ids[1]);
+      if (!a || !b) return null;
+      const ta = topOf(a), tb = topOf(b);
+      return { x: (ta.x + tb.x) / 2, y: (ta.y + tb.y) / 2 };
+    }
+    return null;
+  }
+
+  // Targets are chosen by a stitch's TOP (where the hook goes in), so stitches
+  // that share a base (e.g. a whole round worked into the ring centre) are still
+  // individually selectable where they actually end.
+  function stitchTops() {
+    return store.state.stitches.map((s) => ({ s, pt: topOf(s) }));
+  }
+  function nearestTop(x, y, maxD = Infinity) {
+    let best = null, bd = Infinity;
+    for (const { s, pt } of stitchTops()) {
+      const d = Math.hypot(pt.x - x, pt.y - y);
+      if (d < bd) { bd = d; best = s; }
+    }
+    return best && bd <= maxD ? best : null;
+  }
+  function pickTargetAt(x, y) {
+    const cands = stitchTops()
+      .map((c) => ({ ...c, d: Math.hypot(c.pt.x - x, c.pt.y - y) }))
+      .sort((a, b) => a.d - b.d);
+    if (!cands.length || cands[0].d > 90) return null;
+    const a = cands[0], b = cands[1];
+    if (b) {
+      const mx = (a.pt.x + b.pt.x) / 2, my = (a.pt.y + b.pt.y) / 2;
+      const adjacent = Math.hypot(a.pt.x - b.pt.x, a.pt.y - b.pt.y) < 90;
+      if (adjacent && Math.hypot(mx - x, my - y) < a.d) return { kind: 'space', ids: [a.s.id, b.s.id] };
+    }
+    return { kind: 'stitch', id: a.s.id };
+  }
+
   function resetInsert() {
-    stage = 'target';
     lockedTarget = null;
+    // A fresh strand starts by picking the origin (if there's anything to pick);
+    // once you're working, origin auto-advances so you go straight to the target.
+    stage = store.currentOriginId() ? 'target' : (store.state.stitches.length ? 'origin' : 'target');
   }
 
   const rect = () => svg.getBoundingClientRect();
@@ -119,28 +161,26 @@ export function initCanvas(store) {
     cursorLayer.innerHTML = '';
   }
 
-  function ghostMarkup(orbit) {
-    const inner = shapesMarkup(buildStitchShapes(placement.ref, store.state.clusterMap).shapes, GHOST);
-    let g = '', marks = '';
+  // The stitch ghost, stretched to `len`, for each (already-transformed) base.
+  function ghostMarkup(orbit, len) {
+    const inner = shapesMarkup(buildStitchShapes(placement.ref, store.state.clusterMap, len).shapes, GHOST);
+    let g = '';
     orbit.forEach((o, i) => {
       const m = o.mirror ? ' scale(-1,1)' : '';
-      g += `<g transform="translate(${round(o.x)} ${round(o.y)}) rotate(${round(o.rot)})${m}" opacity="${i === 0 ? 0.55 : 0.26}">${inner}</g>`;
+      g += `<g transform="translate(${round(o.x)} ${round(o.y)}) rotate(${round(o.rot)})${m}" opacity="${i === 0 ? 0.6 : 0.28}">${inner}</g>`;
     });
-    for (const o of orbit) marks += `<circle cx="${round(o.x)}" cy="${round(o.y)}" r="3.2" fill="none" stroke="${GHOST}" stroke-width="1.2"/>`;
-    return g + marks;
+    return g;
   }
-  function targetMarkup(target, originSt) {
-    const pt = store.targetPoint(target);
+  function targetMark(target) {
+    const pt = insertionPoint(target);
     if (!pt) return '';
-    if (target.kind === 'stitch' && originSt && target.id === originSt.id) return ''; // == origin
-    return target.kind === 'space' ? spaceMark(pt, TARGET, 'sp') : halo(pt, TARGET, 'into');
+    return target.kind === 'space' ? diamond(pt, TARGET) : dot(pt, TARGET);
   }
 
   function updateGhost(u) {
     lastU = u;
     if (tool !== 'place') return clearGhost();
     const p = store.snapPoint(u.x, u.y);
-    const rot = store.defaultRotFor(p.x, p.y);
     const sym = store.state.settings.symmetry;
     const atCenter = Math.hypot(p.x, p.y) < 1e-6;
 
@@ -152,24 +192,32 @@ export function initCanvas(store) {
     }
 
     const originSt = store.byId(store.currentOriginId());
-    const originHalo = originSt ? halo(originSt, ORIGIN, 'origin') : '';
+    const originDot = originSt ? dot(topOf(originSt), ORIGIN) : '';
+    const reticle = (color) => `<circle cx="${round(p.x)}" cy="${round(p.y)}" r="3" fill="none" stroke="${color}" stroke-width="1.4"/>`;
 
+    if (stage === 'origin') {
+      // Picking where we come from: highlight the candidate origin under cursor.
+      const cand = nearestTop(p.x, p.y);
+      cursorLayer.innerHTML = (cand ? dot(topOf(cand), ORIGIN, 5) : '') + reticle(ORIGIN);
+      return;
+    }
     if (stage === 'target') {
-      // Choosing what to crochet into — highlight the candidate target + a reticle.
-      const target = atCenter ? null : store.pickTarget(p.x, p.y);
-      const reticle = `<circle cx="${round(p.x)}" cy="${round(p.y)}" r="4" fill="none" stroke="${TARGET}" stroke-width="1.6"/>`;
-      cursorLayer.innerHTML = reticle + targetMarkup(target, originSt) + originHalo;
+      // Picking the base: highlight the candidate target.
+      const target = atCenter ? null : pickTargetAt(p.x, p.y);
+      cursorLayer.innerHTML = reticle(TARGET) + targetMark(target) + originDot;
       return;
     }
 
-    // stage 'position': target is locked; the stitch goes where you click.
-    const useSym = !atCenter && (sym.order > 1 || sym.mirror);
-    const orbit = useSym ? symmetryOrbit({ x: p.x, y: p.y, rot, mirror: false }, sym) : [{ x: p.x, y: p.y, rot, mirror: false }];
-    const tgtPt = store.targetPoint(lockedTarget);
-    let links = '';
-    if (originSt) links += link(originSt.x, originSt.y, p.x, p.y, ORIGIN, '5 3');
-    if (tgtPt) links += link(p.x, p.y, tgtPt.x, tgtPt.y, TARGET, '2 3');
-    cursorLayer.innerHTML = links + ghostMarkup(orbit) + originHalo + targetMarkup(lockedTarget, originSt);
+    // stage 'position': base is the locked target; draw the stitch stretched to cursor.
+    const base = insertionPoint(lockedTarget) || p;
+    const dx = p.x - base.x, dy = p.y - base.y;
+    const len = Math.max(2, Math.hypot(dx, dy));
+    const rot = (Math.atan2(dx, -dy) * 180) / Math.PI;
+    const baseAtCenter = Math.hypot(base.x, base.y) < 1e-6;
+    const useSym = (sym.order > 1 || sym.mirror) && !(baseAtCenter && len < 0.001);
+    const orbit = useSym ? symmetryOrbit({ x: base.x, y: base.y, rot, mirror: false }, sym) : [{ x: base.x, y: base.y, rot, mirror: false }];
+    const linkLine = originSt ? link(originSt.x, originSt.y, base.x, base.y, ORIGIN, '4 3') : '';
+    cursorLayer.innerHTML = linkLine + ghostMarkup(orbit, len) + originDot + dot(base, TARGET);
   }
 
   function placementName() {
@@ -177,7 +225,16 @@ export function initCanvas(store) {
       || (store.state.clusterMap[placement.ref] && store.state.clusterMap[placement.ref].name)
       || (placement.kind === 'motif' ? 'motif' : 'stitch');
   }
+  function updateToast() {
+    if (!toastEl) return;
+    if (tool !== 'place') { toastEl.hidden = true; return; }
+    toastEl.hidden = false;
+    if (isOneClick()) toastEl.textContent = `Click to place ${placementName()}`;
+    else toastEl.textContent = stage === 'origin' ? 'Select origin stitch'
+      : stage === 'target' ? 'Select stitch target' : 'Select stitch position';
+  }
   function updateHint() {
+    updateToast();
     if (!hintEl) return;
     if (tool === 'pan') { hintEl.textContent = 'Drag to pan · scroll to zoom'; return; }
     if (tool === 'select') {
@@ -186,8 +243,9 @@ export function initCanvas(store) {
     }
     const name = placementName();
     if (isOneClick()) hintEl.textContent = `Click to place the ${name} · Esc to exit`;
-    else if (stage === 'target') hintEl.textContent = `Insert ${name} — click what to crochet into (target) · Shift-click sets origin · Esc exits`;
-    else hintEl.textContent = `Insert ${name} — click to place it · Esc cancels the target`;
+    else if (stage === 'origin') hintEl.textContent = `Insert ${name} — click the stitch you're working from · Esc exits`;
+    else if (stage === 'target') hintEl.textContent = `Insert ${name} — click what to crochet into (its base) · Shift-click sets origin · Esc exits`;
+    else hintEl.textContent = `Insert ${name} — click the top to lock it in · Esc cancels the target`;
   }
 
   // ---- pointer interaction -------------------------------------------------
@@ -199,31 +257,43 @@ export function initCanvas(store) {
     }
     const u = toUser(e.clientX, e.clientY);
     if (tool === 'place') {
-      // Shift-click an existing stitch re-anchors the origin (working position),
-      // so you can continue a new strand from anywhere without placing.
+      // Shift-click an existing stitch re-anchors the origin (working position).
       if (e.shiftKey && placement.kind !== 'motif') {
         const hit = e.target.closest('[data-id]');
-        if (hit) { store.setOrigin(hit.getAttribute('data-id')); updateGhost(u); return; }
+        if (hit) { store.setOrigin(hit.getAttribute('data-id')); if (stage === 'origin') stage = 'target'; updateHint(); updateGhost(u); return; }
       }
       const p = store.snapPoint(u.x, u.y);
+      const atCenter = Math.hypot(p.x, p.y) < 1e-6;
       if (placement.kind === 'motif') {
         store.placeMotif(placement.ref, p.x, p.y);
       } else if (isOneClick()) {
         // a start (round 0): one click, no origin/target — it's a fresh root.
         store.addStitch({ type: placement.ref, x: p.x, y: p.y, origin: null, target: null }, { select: false });
-      } else if (stage === 'target') {
-        // first click: choose what to crochet into.
-        const t = store.pickTarget(p.x, p.y);
-        if (t) { lockedTarget = t; stage = 'position'; updateHint(); updateGhost(u); return; }
-        // nothing here to work into → place freely in one click.
-        store.addStitch({ type: placement.ref, x: p.x, y: p.y, origin: store.currentOriginId(), target: null }, { select: false });
-      } else {
-        // second click: place the stitch (origin auto-advances to it).
-        store.addStitch({ type: placement.ref, x: p.x, y: p.y, origin: store.currentOriginId(), target: lockedTarget }, { select: false });
         resetInsert();
-        updateHint();
+      } else if (stage === 'origin') {
+        // pick where we're working from (or skip if nothing is nearby)
+        const cand = nearestTop(p.x, p.y, 80);
+        if (cand) store.setOrigin(cand.id);
+        stage = 'target'; updateHint(); updateGhost(u); return;
+      } else if (stage === 'target') {
+        // pick the base (a stitch, a space, or a free point if empty)
+        lockedTarget = (atCenter ? null : pickTargetAt(p.x, p.y)) || { kind: 'point', x: p.x, y: p.y };
+        stage = 'position'; updateHint(); updateGhost(u); return;
+      } else {
+        // pick the top: place the stitch as a line from its base (target) to here
+        const base = insertionPoint(lockedTarget) || p;
+        const dx = p.x - base.x, dy = p.y - base.y;
+        const len = Math.max(2, Math.hypot(dx, dy));
+        const rot = (Math.atan2(dx, -dy) * 180) / Math.PI;
+        store.addStitch({
+          type: placement.ref, x: base.x, y: base.y, rot, len,
+          origin: store.currentOriginId(),
+          target: lockedTarget.kind === 'point' ? null : lockedTarget,
+        }, { select: false });
+        resetInsert(); // origin auto-advances to the new stitch -> next is 'target'
       }
-      updateGhost(u); // refresh halos for the new chain head / next target pick
+      updateHint();
+      updateGhost(u);
       return;
     }
     // select tool
@@ -386,6 +456,8 @@ export function initCanvas(store) {
     },
     onLoad() {
       view = { ...store.state.view };
+      resetInsert();
+      updateHint();
       render();
     },
     setSpace(v) { spaceDown = v; },
