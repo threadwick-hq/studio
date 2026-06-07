@@ -9,7 +9,7 @@ import {
   chainOrder, spacesForRound, pickBase, successorInRound, chainFrom,
   defaultOriginId, basePoint,
 } from '../src/core/connectivity';
-import { newProject, newPattern, normalizeProject, projectToFile, projectFromFile, startRoundId } from '../src/core/model';
+import { newProject, newPattern, normalizeProject, projectToFile, projectFromFile, startRowId } from '../src/core/model';
 import { store } from '../src/core/store';
 import { summarizeRound } from '../src/core/files';
 import { sampleProject } from '../src/core/sample';
@@ -109,8 +109,9 @@ test('newProject / newPattern shape', () => {
   assert.deepEqual(Object.keys(p.resources).sort(), ['links', 'notes', 'variations', 'yarns']);
   const pat = newPattern('Sq');
   assert.equal(pat.type, 'granny');
-  assert.equal(pat.rounds.length, 1);
-  assert.equal(pat.activeRound, pat.rounds[0]!.id);
+  assert.equal(pat.rounds.length, 2);            // Start row + Round 1 from the outset
+  assert.equal(pat.rounds[0]!.name, 'Start');
+  assert.equal(pat.activeRound, pat.rounds[0]!.id); // opens on the Start row
 });
 test('normalizeProject tolerates junk + drops orphan stitches', () => {
   const p = normalizeProject({ name: 'M', patterns: [{ type: 'granny', rounds: [{ id: 'r1', name: 'R1' }], stitches: [{ type: 'dc', round: 'r1', x: 1, y: 2 }, { type: 'dc', round: 'GONE' }, { junk: true }] }] });
@@ -157,19 +158,19 @@ test('store: create, start, chain, splice, repair, undo/redo', () => {
   store.undo(); assert.equal(pat().stitches.length, n + 1);
   store.redo(); assert.equal(pat().stitches.length, n);
 });
-test('store: start marker lives alone in Round 0', () => {
+test('store: start marker lives alone in the Start row', () => {
   const pid = store.createProject('Z');
   const patId = store.createPattern(pid, 'Sq')!;
   store.openPattern(pid, patId);
   const pat = () => store.currentPattern()!;
+  assert.equal(pat().rounds[0]!.name, 'Start');
+  assert.equal(pat().activeRound, pat().rounds[0]!.id); // opens on the Start row
   const before = pat().rounds.length;
   store.setStart('mr');
-  assert.equal(pat().rounds.length, before + 1);
-  assert.equal(startRoundId(pat()), pat().rounds[0]!.id);
-  assert.notEqual(pat().activeRound, pat().rounds[0]!.id);
-  store.setActiveRound(pat().rounds[0]!.id);
-  assert.notEqual(pat().activeRound, pat().rounds[0]!.id);
-  assert.equal(pat().stitches.filter((s) => s.round === pat().rounds[0]!.id).length, 1);
+  assert.equal(pat().rounds.length, before, 'no new row added — the Start row pre-exists');
+  assert.equal(startRowId(pat()), pat().rounds[0]!.id);
+  assert.notEqual(pat().activeRound, pat().rounds[0]!.id, 'advances to a working row');
+  assert.equal(pat().stitches.filter((s) => s.round === pat().rounds[0]!.id).length, 1); // ring alone in Start
 });
 test('store: chains auto-align evenly between non-chain neighbours', () => {
   const pid = store.createProject('CH');
@@ -236,8 +237,8 @@ test('store: evenRound fans stitches to equal radius', () => {
   const pid = store.createProject('E');
   const patId = store.createPattern(pid, 'Sq')!;
   store.openPattern(pid, patId);
-  const round = store.currentPattern()!.rounds[0]!.id;
   const r = store.setStart('mr')!;
+  const round = store.currentPattern()!.activeRound; // working row after setStart auto-advances
   let o = r;
   for (const [, ] of [[10, -20], [22, 3], [-5, 25], [-18, -9]]) o = store.placeStitch({ type: 'dc', base: { kind: 'stitch', id: r }, x: 0, y: 0, rot: Math.random() * 90, len: 10 + Math.random() * 30, originId: o })!;
   store.evenRound(round);

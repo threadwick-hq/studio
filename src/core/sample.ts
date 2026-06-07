@@ -25,7 +25,7 @@ export function sampleProject(): Project {
   const prj = newProject('Sunburst granny');
   prj.description = 'A classic two-round granny square — your starter project. Open it to see how every stitch comes out of an origin and is worked into a base.';
   const pat = newPattern('Classic granny square');
-  const r0: Round = { id: uid('rnd'), name: 'Round 0' };
+  const r0: Round = { id: uid('rnd'), name: 'Start' };
   const r1 = pat.rounds[0]!; r1.name = 'Round 1';
   const r2: Round = { id: uid('rnd'), name: 'Round 2' };
   pat.rounds = [r0, r1, r2];

@@ -23,14 +23,15 @@ export function newRound(name?: string): Round {
 }
 
 export function newPattern(name?: string, type: PatternKind = 'granny'): Pattern {
+  const startRow: Round = { id: uid('rnd'), name: 'Start' };
   const r1 = newRound('Round 1');
   return {
     id: uid('pat'),
     type: PATTERN_TYPES[type] ? type : 'granny',
     name: name || 'Untitled pattern',
     start: null,
-    rounds: [r1],
-    activeRound: r1.id,
+    rounds: [startRow, r1],   // the Start row (row 0) exists from the start
+    activeRound: startRow.id, // open on Start so you pick a starting stitch first
     stitches: [],
     view: { scale: 1.4, panX: 0, panY: 0 },
     createdAt: nowISO(),
@@ -119,26 +120,41 @@ export function normalizeProject(p: any = {}): Project {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-// ---- start row (Round 0) --------------------------------------------------
-export function startRoundId(pat: Pattern): string | null {
-  const s = pat.stitches.find((x) => isStart(x.type));
-  return s ? s.round : null;
+// ---- the "Start" row (row 0) ----------------------------------------------
+// Row 0 is always the Start row: it exists from creation and holds only the
+// start marker. The first round is the Start row for a granny pattern.
+export function startRowId(pat: Pattern): string | null {
+  return pat.rounds[0] ? pat.rounds[0].id : null;
 }
-export function isStartRound(pat: Pattern, roundId: string | null): boolean {
-  return roundId != null && roundId === startRoundId(pat);
+export function isStartRow(pat: Pattern, roundId: string | null): boolean {
+  return roundId != null && pat.rounds[0]?.id === roundId;
+}
+export function hasStart(pat: Pattern): boolean {
+  return pat.stitches.some((s) => isStart(s.type));
 }
 
-// Guarantee the start marker (if any) sits alone in a "Round 0" at the front.
+// Guarantee a "Start" row at index 0 (holding only the start marker, if any),
+// plus at least one working row after it. Migrates older data.
 export function ensureStartRow(pat: Pattern): void {
   const start = pat.stitches.find((s) => isStart(s.type));
-  if (!start) return;
-  const inSameRound = pat.stitches.filter((s) => s.round === start.round);
-  const alreadyDedicated = inSameRound.length === 1 && pat.rounds[0] && pat.rounds[0].id === start.round;
-  if (alreadyDedicated) { pat.rounds[0]!.name = 'Round 0'; return; }
-  const r0: Round = { id: uid('rnd'), name: 'Round 0' };
-  pat.rounds.unshift(r0);
-  start.round = r0.id;
-  if (isStartRound(pat, pat.activeRound)) pat.activeRound = (pat.rounds[1] || pat.rounds[0])!.id;
+  if (start) {
+    const inSame = pat.stitches.filter((s) => s.round === start.round);
+    const aloneInRound = inSame.length === 1;
+    if (aloneInRound && pat.rounds[0] && pat.rounds[0].id !== start.round) {
+      // its row is already dedicated but not first — move that row to the front
+      const startRound = pat.rounds.find((r) => r.id === start.round)!;
+      pat.rounds = [startRound, ...pat.rounds.filter((r) => r.id !== start.round)];
+    } else if (!aloneInRound) {
+      const r: Round = { id: uid('rnd'), name: 'Start' }; pat.rounds.unshift(r); start.round = r.id;
+    }
+  } else {
+    const first = pat.rounds[0];
+    const firstHasStitches = !!first && pat.stitches.some((s) => s.round === first.id);
+    if (!first || firstHasStitches) pat.rounds.unshift({ id: uid('rnd'), name: 'Start' });
+  }
+  if (pat.rounds[0]) pat.rounds[0].name = 'Start';
+  if (pat.rounds.length < 2) pat.rounds.push(newRound('Round 1'));
+  if (!pat.rounds.find((r) => r.id === pat.activeRound)) pat.activeRound = pat.rounds[0]!.id;
 }
 
 // ---- portable project file -------------------------------------------------

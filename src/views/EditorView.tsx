@@ -14,7 +14,7 @@ import type { CanvasController, Mode } from '../core/editorCanvas';
 import { STITCH_ORDER, START_ORDER, STITCHES, STITCH_KEYS, isStart, isRealStitch } from '../core/symbols';
 import { chainOrder } from '../core/connectivity';
 import { summarizeRound, exportPatternSVG, exportPatternPNG, printProject } from '../core/files';
-import { startRoundId } from '../core/model';
+import { hasStart } from '../core/model';
 import { INK } from '../core/render';
 import type { Stitch, StitchType } from '../core/types';
 
@@ -59,7 +59,12 @@ export function EditorView() {
       if (e.key === ' ') { e.preventDefault(); c.setSpace(true); return; }
       if (k === 'v') { c.setMode('select'); return; }
       if (k === 'i') { c.setMode('insert'); return; }
-      if (KEY_TO_TYPE[k]) { c.setArmed(KEY_TO_TYPE[k]!); return; }
+      if (KEY_TO_TYPE[k]) {
+        const cur = s.currentPattern();
+        const onStartRow = !!cur && cur.rounds[0]?.id === cur.activeRound;
+        if (!onStartRow) c.setArmed(KEY_TO_TYPE[k]!); // no normal stitches on the Start row
+        return;
+      }
       if (k === 'r') { s.rotateSelectionBy(e.shiftKey ? -15 : 15); return; }
       const n = e.shiftKey ? 8 : 2;
       if (e.key === 'ArrowLeft') { e.preventDefault(); s.moveSelectionBy(-n, 0); }
@@ -74,8 +79,10 @@ export function EditorView() {
   }, [s]);
 
   if (!pat) return null;
-  const startId = startRoundId(pat);
-  const working = pat.rounds.filter((r) => r.id !== startId);
+  const startRow = pat.rounds[0];
+  const working = pat.rounds.slice(1);
+  const onStart = !!startRow && startRow.id === pat.activeRound;
+  const started = hasStart(pat);
   const exportItems = [
     { key: 'svg', label: 'SVG image' },
     { key: 'png', label: 'PNG image' },
@@ -132,16 +139,20 @@ export function EditorView() {
 
         <div className="canvas-wrap">
           <CanvasView controllerRef={ctrl} onChange={sync} />
-          <StepToast chrome={chrome} />
-          <Hint chrome={chrome} />
+          <StepToast chrome={chrome} onStart={onStart} started={started} />
+          <Hint chrome={chrome} onStart={onStart} started={started} />
         </div>
 
         <aside className="ed-right">
           <div className="rows-panel">
             <div className="panel-head"><div className="panel-title">Rows</div><Button size="small" icon={<PlusOutlined />} onClick={() => { s.addRound(); ctrl.current?.resetInsert(); }}>Row</Button></div>
             <div className="rows-list">
-              {startId && (
-                <div className="row-item start-row"><div className="row-main static"><b>Round 0</b><small>{pat.start ? STITCHES[pat.start].name : 'start'} · centre</small></div></div>
+              {startRow && (
+                <div className={'row-item start-row' + (onStart ? ' on' : '')}>
+                  <button className="row-main" onClick={() => { s.setActiveRound(startRow.id); ctrl.current?.resetInsert(); }}>
+                    <b>Start</b><small>{pat.start ? STITCHES[pat.start].name : 'pick a starting stitch'}</small>
+                  </button>
+                </div>
               )}
               {working.map((r) => {
                 const count = chainOrder(pat.stitches, r.id).filter((x) => !isStart(x.type)).length;
@@ -187,34 +198,39 @@ export function EditorView() {
   );
 }
 
+// The palette is contextual: on the Start row you pick a starting stitch; on any
+// working row you pick a normal stitch.
 function Palette({ pat, chrome, ctrl }: { pat: import('../core/types').Pattern; chrome: Chrome; ctrl: React.MutableRefObject<CanvasController | null>; }) {
   const s = useStore();
-  return (
-    <>
+  const onStart = pat.rounds[0]?.id === pat.activeRound;
+  if (onStart) {
+    return (
       <div className="panel">
         <div className="panel-title">Start</div>
         <div className="chips">
           {START_ORDER.map((t) => (
             <button key={t} className={'chip' + (pat.start === t ? ' on' : '')} title={STITCHES[t].name}
-              onClick={() => { s.setStart(t); ctrl.current?.setArmed('dc'); }}>
+              onClick={() => { s.setStart(t); ctrl.current?.setArmed('dc'); ctrl.current?.resetInsert(); }}>
               <Glyph type={t} /><span>{STITCHES[t].abbr}</span>
             </button>
           ))}
         </div>
       </div>
-      <div className="panel">
-        <div className="panel-title">Stitches</div>
-        <div className="chips">
-          {STITCH_ORDER.map((t) => (
-            <button key={t} className={'chip' + (chrome.mode === 'insert' && chrome.armed === t ? ' on' : '')} title={STITCHES[t].name}
-              onClick={() => ctrl.current?.setArmed(t)}>
-              <Glyph type={t} /><span>{STITCHES[t].abbr}</span>
-              {STITCH_KEYS[t] && <kbd>{STITCH_KEYS[t]!.toUpperCase()}</kbd>}
-            </button>
-          ))}
-        </div>
+    );
+  }
+  return (
+    <div className="panel">
+      <div className="panel-title">Stitches</div>
+      <div className="chips">
+        {STITCH_ORDER.map((t) => (
+          <button key={t} className={'chip' + (chrome.mode === 'insert' && chrome.armed === t ? ' on' : '')} title={STITCHES[t].name}
+            onClick={() => ctrl.current?.setArmed(t)}>
+            <Glyph type={t} /><span>{STITCHES[t].abbr}</span>
+            {STITCH_KEYS[t] && <kbd>{STITCH_KEYS[t]!.toUpperCase()}</kbd>}
+          </button>
+        ))}
       </div>
-    </>
+    </div>
   );
 }
 
@@ -277,7 +293,9 @@ function Legend({ pat }: { pat: import('../core/types').Pattern }) {
   );
 }
 
-function StepToast({ chrome }: { chrome: Chrome }) {
+function StepToast({ chrome, onStart, started }: { chrome: Chrome; onStart: boolean; started: boolean }) {
+  if (onStart) return <div className="toast">Pick a starting stitch — magic ring, double ring, chain ring or slip knot</div>;
+  if (!started) return <div className="toast">Pick a starting stitch first (the Start row)</div>;
   if (chrome.mode !== 'insert') return null;
   const name = STITCHES[chrome.armed]?.name || 'stitch';
   let text: string;
@@ -287,9 +305,10 @@ function StepToast({ chrome }: { chrome: Chrome }) {
   return <div className="toast">{text}</div>;
 }
 
-function Hint({ chrome }: { chrome: Chrome }) {
+function Hint({ chrome, onStart, started }: { chrome: Chrome; onStart: boolean; started: boolean }) {
   let text: string;
-  if (chrome.mode !== 'insert') text = 'Drag to move · drag empty space to box-select · scroll to zoom · hold Space to pan · press a stitch key to start';
+  if (onStart || !started) text = 'Every stitch is worked out from the centre — pick a start to begin';
+  else if (chrome.mode !== 'insert') text = 'Drag to move · drag empty space to box-select · scroll to zoom · hold Space to pan · press a stitch key to start';
   else if (chrome.armed === 'ch') text = 'Chains flow out of the origin (light blue) · Alt/⌘-click a stitch to work out of it · Esc to leave Insert';
   else if (chrome.phase === 'head') text = 'The bottom sits in the base; the top follows your cursor · Esc to redo the base';
   else text = 'Click a stitch head or an orange space · Alt/⌘-click a stitch to work out of it (insert after) · Esc to leave Insert';
@@ -301,7 +320,7 @@ function HelpModal({ open, onClose }: { open: boolean; onClose: () => void }) {
     <Modal title="Designing a granny square" open={open} onCancel={onClose} footer={null} width={560}>
       <p>This editor recreates your crochet work. Every stitch <b>comes out of</b> an origin and is <b>worked into</b> a base — a stitch head or the space between two stitches. Build on even bases and the chart stays even, no symmetry maths required.</p>
       <ol className="help-steps">
-        <li><b>Start:</b> pick a centre (magic ring, etc.). It drops into its own Round 0.</li>
+        <li><b>Start:</b> pick a centre (magic ring, etc.). It drops into the Start row.</li>
         <li><b>Row:</b> choose which row you're working in the Rows panel (top-right).</li>
         <li><b>Insert:</b> press <kbd>I</kbd> or a stitch key (<kbd>D</kbd>=dc). The origin is <span className="sw" style={{ background: '#5cb3ff' }} /> light blue.</li>
         <li><b>Base:</b> orange dots <span className="sw" style={{ background: '#e8830c' }} /> mark spaces. Click a space or a stitch head, then click again to set the head.</li>
