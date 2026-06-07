@@ -16,7 +16,7 @@ import { chainOrder } from '../core/connectivity';
 import { usedTypes } from '../core/render';
 import { summarizeRound, exportPatternSVG, exportPatternPNG, printPattern } from '../core/files';
 import { hasStart, isStartRow } from '../core/model';
-import { INK, ORIGIN, SPACE, SELECT } from '../core/colors';
+import { INK, ORIGIN, SPACE, SELECT, NEXT } from '../core/colors';
 import type { Stitch, StitchType } from '../core/types';
 
 const { Title } = Typography;
@@ -376,7 +376,7 @@ function HelpModal({ open, onClose }: { open: boolean; onClose: () => void }) {
         <li><b>Insert:</b> press <kbd>I</kbd> or a stitch key (<kbd>D</kbd>=dc). The origin is <span className="sw" style={{ background: ORIGIN }} /> light blue.</li>
         <li><b>Base:</b> orange dots <span className="sw" style={{ background: SPACE }} /> mark spaces. Click a space or a stitch head, then click again to set the head.</li>
         <li><b>Chains:</b> flow off the origin in one click and auto-align evenly between neighbours.</li>
-        <li><b>Insert after:</b> <kbd>Alt</kbd>/<kbd>⌘</kbd>-click a stitch to set it as origin; the next stitch turns <span className="sw" style={{ background: '#a259ff' }} /> purple and everything after greys out.</li>
+        <li><b>Insert after:</b> <kbd>Alt</kbd>/<kbd>⌘</kbd>-click a stitch to set it as origin; the next stitch turns <span className="sw" style={{ background: NEXT }} /> purple and everything after greys out.</li>
       </ol>
       <Title level={5}>Keys</Title>
       <table className="keys">

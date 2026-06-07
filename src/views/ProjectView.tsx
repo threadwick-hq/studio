@@ -44,10 +44,7 @@ export function ProjectView() {
     }).catch(() => { /* validation errors are shown inline by the form */ });
   };
 
-  const openRes = (kind: ResourceKind, item: ResItem | null) => {
-    setRes({ kind, item });
-    setTimeout(() => { resForm.resetFields(); resForm.setFieldsValue(item ?? (kind === 'links' ? { kind: 'video' } : {})); }, 0);
-  };
+  const openRes = (kind: ResourceKind, item: ResItem | null) => setRes({ kind, item });
   const saveRes = () => {
     if (!res) return;
     resForm.validateFields().then((v) => {
@@ -145,9 +142,11 @@ export function ProjectView() {
         </Form>
       </Modal>
 
-      <Modal title={`${res?.item ? 'Edit' : 'Add'} ${res ? RES_META[res.kind].title.toLowerCase().replace(/s$| & videos$/, '') : ''}`}
+      <Modal title={res ? `${res.item ? 'Edit' : 'Add'} ${RES_META[res.kind].add.toLowerCase()}` : ''}
         open={!!res} onOk={saveRes} okText={res?.item ? 'Save' : 'Add'} onCancel={() => setRes(null)} destroyOnHidden>
-        <Form form={resForm} layout="vertical" requiredMark={false}>
+        <Form form={resForm} layout="vertical" requiredMark={false}
+          key={res ? (res.item?.id ?? `new-${res.kind}`) : 'none'}
+          initialValues={res?.item ?? (res?.kind === 'links' ? { kind: 'video' } : {})}>
           {res?.kind === 'yarns' && <>
             <Form.Item name="name" label="Name"><Input placeholder="e.g. Cotton 8/4" autoFocus /></Form.Item>
             <Form.Item name="brand" label="Brand"><Input /></Form.Item>
@@ -161,7 +160,7 @@ export function ProjectView() {
           {res?.kind === 'links' && <>
             <Form.Item name="title" label="Title"><Input placeholder="e.g. Magic ring tutorial" autoFocus /></Form.Item>
             <Form.Item name="url" label="URL"><Input placeholder="https://…" /></Form.Item>
-            <Form.Item name="kind" label="Kind"><Select options={[{ value: 'video' }, { value: 'article' }, { value: 'link' }]} /></Form.Item>
+            <Form.Item name="kind" label="Kind"><Select options={[{ value: 'video', label: 'Video' }, { value: 'article', label: 'Article' }, { value: 'link', label: 'Link' }]} /></Form.Item>
           </>}
           {(res?.kind === 'notes' || res?.kind === 'variations') && <>
             <Form.Item name="title" label="Title"><Input autoFocus /></Form.Item>
