@@ -15,7 +15,8 @@ import type {
   Project, ProjectVersion, Pattern, Round, Stitch, Base, StitchType, ResourceKind, Resources, UIState,
 } from './types';
 
-const SAVE_KEY = 'stitchgridstudio:v2';
+const SAVE_KEY = 'threadwickstudio:v2';
+const LEGACY_SAVE_KEY = 'stitchgridstudio:v2'; // pre-rename key; read once and migrated forward
 
 export interface StoreState { library: { projects: Project[] }; ui: UIState; }
 type Listener = (state: StoreState) => void;
@@ -524,7 +525,9 @@ class Store {
   saveLocal(): void { try { localStorage.setItem(SAVE_KEY, JSON.stringify(this.serialize())); } catch { /* ignore quota */ } }
   loadLocal(): boolean {
     try {
-      const raw = localStorage.getItem(SAVE_KEY);
+      let raw = localStorage.getItem(SAVE_KEY);
+      const fromLegacy = raw === null;
+      if (fromLegacy) raw = localStorage.getItem(LEGACY_SAVE_KEY); // tool was renamed; keep old data
       if (!raw) return false;
       const data = JSON.parse(raw);
       if (!data || !data.library || !Array.isArray(data.library.projects)) return false;
@@ -537,6 +540,7 @@ class Store {
         if (pat && ui.view === 'editor') { this.state.ui.patternId = pat.id; this.state.ui.view = 'editor'; }
         else this.state.ui.view = 'project';
       }
+      if (fromLegacy) this.saveLocal(); // migrate pre-rename data onto the current key
       return true;
     } catch { return false; }
   }

@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 // Published to GitHub Pages via Actions (the workflow uploads dist/). A relative
-// base keeps assets working under the project-page subpath (/stitchgrid/).
+// base keeps assets working under the project-page subpath (/threadwick/).
 export default defineConfig({
   plugins: [react()],
   base: './',

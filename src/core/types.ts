@@ -1,4 +1,4 @@
-// Shared domain types for stitchgrid studio.
+// Shared domain types for threadwick studio.
 
 export type StitchType =
   | 'ch' | 'slst' | 'sc' | 'hdc' | 'dc' | 'tr' | 'dtr' // working stitches

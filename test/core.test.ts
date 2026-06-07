@@ -130,7 +130,7 @@ test('normalizeProject migrates a legacy project into one draft version', () => 
 test('projectToFile / projectFromFile round-trip', () => {
   const p = sampleProject();
   const file = projectToFile(p);
-  assert.equal(file.format, 'stitchgrid-studio');
+  assert.equal(file.format, 'threadwick-studio');
   const back = projectFromFile(JSON.parse(JSON.stringify(file)))!;
   assert.equal(activeVersion(back).patterns[0]!.stitches.length, activeVersion(p).patterns[0]!.stitches.length);
   assert.ok(projectFromFile(p));

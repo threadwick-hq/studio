@@ -1,4 +1,4 @@
-// The data model for stitchgrid studio. A PROJECT is your folder: it holds many
+// The data model for threadwick studio. A PROJECT is your folder: it holds many
 // PATTERNS plus shared RESOURCES. A PATTERN has a type (phase 1: only "granny")
 // and contains ordered ROUNDS and the STITCHES placed in them.
 
@@ -8,7 +8,7 @@ import type {
   Project, ProjectVersion, VersionStatus, Pattern, Round, Stitch, Base, Resources, PatternKind, StitchType, ProjectFile,
 } from './types';
 
-export const FILE_FORMAT = 'stitchgrid-studio';
+export const FILE_FORMAT = 'threadwick-studio';
 export const FILE_VERSION = 3; // v3: projects hold versions (draft/published/outdated)
 
 export interface PatternTypeInfo { id: PatternKind; name: string; worked: string; available: boolean; }

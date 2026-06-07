@@ -21,7 +21,7 @@ store.subscribe(() => {
 });
 
 // Expose for debugging / the browser smoke test.
-(window as unknown as { stitchgrid: unknown }).stitchgrid = { store };
+(window as unknown as { threadwick: unknown }).threadwick = { store };
 
 createRoot(document.getElementById('root')!).render(
   <ConfigProvider theme={theme}>

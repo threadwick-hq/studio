@@ -1,4 +1,4 @@
-// The stitchgrid mark: Font Awesome Pro "swatchbook" (classic regular), used
+// The threadwick mark: Font Awesome Pro "swatchbook" (classic regular), used
 // under the project's Font Awesome Pro commercial license. Renders with
 // currentColor so it tints with the surrounding wordmark; the same path drives
 // the favicon (index.html).
@@ -11,7 +11,7 @@ const PATH = 'M64 464C64 525.9 114.1 576 176 576L504 576C543.8 576 576 543.8 576
 export function Logo({ size = 22, className }: { size?: number; className?: string }) {
   return (
     <svg className={className} width={size} height={size} viewBox="0 0 640 640"
-      fill="currentColor" role="img" aria-label="stitchgrid">
+      fill="currentColor" role="img" aria-label="threadwick">
       <path d={PATH} />
     </svg>
   );

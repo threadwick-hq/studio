@@ -19,7 +19,7 @@ function download(filename: string, blob: Blob): void {
 // ---- project file ----------------------------------------------------------
 export function exportProjectFile(project: Project): void {
   const data = JSON.stringify(projectToFile(project), null, 2);
-  download(`${slug(project.name, 'project')}.stitchgrid.json`, new Blob([data], { type: 'application/json' }));
+  download(`${slug(project.name, 'project')}.threadwick.json`, new Blob([data], { type: 'application/json' }));
 }
 
 export function importProjectFile(): Promise<Project | null> {
@@ -152,7 +152,7 @@ function patternSection(pat: Pattern, opts: { title?: boolean; legend?: boolean;
 function printDoc(title: string, bodyInner: string): string {
   return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeXML(title)}</title>`
     + `<style>${PRINT_CSS}</style></head><body>${bodyInner}`
-    + `<footer>Made with stitchgrid studio · printable PDF</footer></body></html>`;
+    + `<footer>Made with threadwick studio · printable PDF</footer></body></html>`;
 }
 
 function openPrintWindow(): Window | null {

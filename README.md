@@ -1,4 +1,4 @@
-# stitchgrid studio
+# threadwick studio
 
 A **crochet project designer** for the web. Keep every project — its patterns,
 the yarns you used, tutorial links and notes — in one folder, and design
@@ -115,7 +115,7 @@ In Claude Code, enable the project server when prompted (or run `claude mcp list
 
 Every project autosaves to your browser; these are the ways out:
 
-- **Project file** — a portable `.stitchgrid.json`. Import re-adds it as a fresh copy.
+- **Project file** — a portable `.threadwick.json`. Import re-adds it as a fresh copy.
 - **Export pattern…** (editor hamburger menu) — a dialog to pick a **format**
   (SVG / PNG / Printable PDF) and **settings**: include title, include legend,
   background (white/transparent, SVG & PNG) and PNG resolution (1×–3×).

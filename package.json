@@ -1,7 +1,7 @@
 {
-  "name": "stitchgrid-studio",
+  "name": "threadwick-studio",
   "version": "1.0.0",
-  "description": "stitchgrid studio — a crochet project designer. Design granny-square stitch charts the way you crochet them.",
+  "description": "threadwick studio — a crochet project designer. Design granny-square stitch charts the way you crochet them.",
   "type": "module",
   "private": true,
   "scripts": {

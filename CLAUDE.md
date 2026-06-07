@@ -1,4 +1,4 @@
-# stitchgrid studio — project instructions
+# threadwick studio — project instructions
 
 Guidance for working in this repo. See [`README.md`](README.md) for the full
 architecture and mental model.
@@ -94,7 +94,7 @@ section for the user-facing behaviour. Hold these invariants when touching it:
   instead of removing grid children blind.
 - **Verifying UI changes.** `npm run build` then `npx vite preview --port <p>`,
   and drive it headless with puppeteer — seed/inspect state via
-  `window.stitchgrid.store`, and screenshot. Name scratch scripts `_*.mjs`
+  `window.threadwick.store`, and screenshot. Name scratch scripts `_*.mjs`
   (gitignored) and delete them after; never `git add -A` them into a commit.
 - **antd is v5** (`5.29.3`); the MCP server is pinned to v5 docs in `.mcp.json`.
   Prefer current v5 APIs (`variant`, `destroyOnHidden`, `menu={{items}}`,

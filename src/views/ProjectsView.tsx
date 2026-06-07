@@ -47,7 +47,7 @@ export function ProjectsView() {
   return (
     <div className="home">
       <header className="topbar">
-        <div className="brand"><Logo className="brand-mark" size={22} /> stitchgrid <span className="brand-sub">studio</span></div>
+        <div className="brand"><Logo className="brand-mark" size={22} /> threadwick <span className="brand-sub">studio</span></div>
         <div className="grow" />
         <Button icon={<ImportIcon />} onClick={onImport}>Import…</Button>
         <Button type="primary" icon={<PlusIcon />} onClick={() => setNewOpen(true)}>New project</Button>
