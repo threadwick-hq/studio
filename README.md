@@ -58,6 +58,22 @@ the **granny square** type; others are stubbed as "coming soon"), plus shared
 PDF** lays the whole project out — chart, legend, round-by-round written
 instructions and resources — into a print/PDF document.
 
+### Versions
+
+A project keeps an ordered list of **versions**, each with its own patterns and
+resources and a status:
+
+- **Draft** — the editable working copy. There's at most one at a time.
+- **Published** — the live version (later: the one shared with others). Exactly
+  one per project.
+- **Outdated** — a previously published version, superseded by a newer one.
+
+**Publish** turns the draft into the published version and marks the previous
+published one Outdated. **Edit as new draft** snapshots the published version
+into a fresh draft so you can work on the next version without disturbing the
+one others rely on. Published and Outdated versions open **read-only**; their
+patterns are still viewable. (A dedicated, richer view mode is planned.)
+
 ## Run it locally
 
 ```bash

@@ -4,7 +4,7 @@ import QRCode from 'qrcode';
 import { chartToSVG } from './render';
 import { chainOrder } from './connectivity';
 import { isStart, STITCHES } from './symbols';
-import { projectToFile, projectFromFile } from './model';
+import { projectToFile, projectFromFile, activeVersion } from './model';
 import { slug, escapeXML } from './util';
 import type { Project, Pattern } from './types';
 
@@ -189,10 +189,11 @@ export async function printProject(project: Project): Promise<void> {
   // open synchronously (keeps the user gesture), then fill once the QRs are ready
   win.document.write('<!doctype html><meta charset="utf-8"><body style="font:16px Georgia,serif;color:#777;padding:28px">Preparing printable PDF…</body>');
 
-  const patterns = project.patterns.map((p) => patternSection(p, {})).join('')
+  const ver = activeVersion(project);
+  const patterns = ver.patterns.map((p) => patternSection(p, {})).join('')
     || '<p class="muted">This project has no patterns yet.</p>';
 
-  const r = project.resources;
+  const r = ver.resources;
   const block = (heading: string, items: string[]): string => items.length ? `<h3>${escapeXML(heading)}</h3><ul>${items.join('')}</ul>` : '';
   const yarns = block('Yarns', r.yarns.map((y) =>
     `<li>${y.hex ? `<span class="swatch" style="background:${escapeXML(y.hex)}"></span>` : ''}`

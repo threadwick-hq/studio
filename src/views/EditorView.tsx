@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  App, Button, Segmented, Select, Slider, Switch, ColorPicker, Dropdown, Modal, Input, Tooltip, Typography,
+  App, Alert, Button, Segmented, Select, Slider, Switch, ColorPicker, Dropdown, Modal, Input, Tooltip, Typography,
 } from 'antd';
 import {
   BackIcon, UndoIcon, RedoIcon, DownloadIcon, HelpIcon, MenuIcon,
@@ -10,6 +10,7 @@ import {
 import { useStore } from '../useStore';
 import { CanvasView } from '../editor/CanvasView';
 import { Glyph } from '../components/Glyph';
+import { statusLabel } from '../components/versionStatus';
 import type { CanvasController, Mode } from '../core/editorCanvas';
 import { STITCH_ORDER, START_ORDER, STITCHES, STITCH_KEYS, isStart, isRealStitch, defaultLen } from '../core/symbols';
 import { chainOrder } from '../core/connectivity';
@@ -30,6 +31,8 @@ export function EditorView() {
   const s = useStore();
   const pat = s.currentPattern();
   const proj = s.currentProject();
+  const ver = s.currentVersion();
+  const readOnly = !ver || ver.status !== 'draft'; // only draft versions are editable
   const ctrl = useRef<CanvasController | null>(null);
   const [chrome, setChrome] = useState<Chrome>({ mode: 'select', armed: 'dc', phase: 'base', nextId: null });
   const [help, setHelp] = useState(false);
@@ -91,7 +94,7 @@ export function EditorView() {
     <div className="editor">
       <header className="topbar">
         <Tooltip title="Back to project"><Button type="text" icon={<BackIcon />} onClick={() => s.backToProject()}><span className="back-label">{proj?.name ?? 'Project'}</span></Button></Tooltip>
-        <Input variant="borderless" className="pat-name" value={pat.name} onChange={(e) => s.renamePattern(pat.id, e.target.value)} />
+        <Input variant="borderless" className="pat-name" value={pat.name} readOnly={readOnly} onChange={(e) => s.renamePattern(pat.id, e.target.value)} />
         <span className="badge">Granny square</span>
         <div className="grow" />
         <Tooltip title="Undo (⌘Z)"><Button type="text" aria-label="Undo" icon={<UndoIcon />} disabled={!s.undoStack.length} onClick={() => s.undo()} /></Tooltip>
@@ -106,14 +109,14 @@ export function EditorView() {
       </header>
 
       <div className="toolbar">
-        <Segmented value={chrome.mode} onChange={(v) => ctrl.current?.setMode(v as Mode)}
+        <Segmented value={chrome.mode === 'insert' && readOnly ? 'select' : chrome.mode} onChange={(v) => ctrl.current?.setMode(v as Mode)}
           options={[
             { label: (<span>Select <kbd className="seg-kbd">V</kbd></span>), value: 'select' },
-            { label: (<span>Insert <kbd className="seg-kbd">I</kbd></span>), value: 'insert' },
+            ...(readOnly ? [] : [{ label: (<span>Insert <kbd className="seg-kbd">I</kbd></span>), value: 'insert' }]),
             { label: (<span>Pan <kbd className="seg-kbd">P</kbd></span>), value: 'pan' },
           ]} />
         <div className="grow" />
-        <Tooltip title="Fan the current row out evenly"><Button size="small" onClick={() => s.evenRound(pat.activeRound)}>Even out row</Button></Tooltip>
+        {!readOnly && <Tooltip title="Fan the current row out evenly"><Button size="small" onClick={() => s.evenRound(pat.activeRound)}>Even out row</Button></Tooltip>}
         <div className="tool-view">
           <Tooltip title="Zoom out"><Button size="small" type="text" aria-label="Zoom out" icon={<ZoomOutIcon />} onClick={() => ctrl.current?.zoomOut()} /></Tooltip>
           <Tooltip title="Fit to view"><Button size="small" icon={<FitIcon />} onClick={() => ctrl.current?.fit()}>Fit</Button></Tooltip>
@@ -121,30 +124,38 @@ export function EditorView() {
         </div>
       </div>
 
+      {readOnly && (
+        <Alert className="ed-readonly" type="info" showIcon banner
+          message={<>Viewing <b>{ver?.label}</b> ({ver ? statusLabel(ver.status) : ''}) — read-only.</>}
+          action={proj && <Button size="small" type="primary" icon={<EditIcon />} onClick={() => s.createDraft(proj.id)}>Edit as new draft</Button>} />
+      )}
+
       <div className="ed-body">
-        <aside className="ed-left">
-          <Palette pat={pat} chrome={chrome} ctrl={ctrl} />
-          <div className="howto-card">
-            <div className="panel-title">How it works</div>
-            <ol className="howto">
-              <li>Pick a <b>start</b>, then a <b>row</b>.</li>
-              <li>Hit <b>Insert</b> (or a stitch key).</li>
-              <li>Click a <b>base</b> — a stitch or an <span className="dot-space" /> space.</li>
-              <li>Click again to set the <b>head</b>.</li>
-              <li><kbd>Alt</kbd>/<kbd>⌘</kbd>-click a stitch to work out of it.</li>
-            </ol>
-          </div>
-        </aside>
+        {!readOnly && (
+          <aside className="ed-left">
+            <Palette pat={pat} chrome={chrome} ctrl={ctrl} />
+            <div className="howto-card">
+              <div className="panel-title">How it works</div>
+              <ol className="howto">
+                <li>Pick a <b>start</b>, then a <b>row</b>.</li>
+                <li>Hit <b>Insert</b> (or a stitch key).</li>
+                <li>Click a <b>base</b> — a stitch or an <span className="dot-space" /> space.</li>
+                <li>Click again to set the <b>head</b>.</li>
+                <li><kbd>Alt</kbd>/<kbd>⌘</kbd>-click a stitch to work out of it.</li>
+              </ol>
+            </div>
+          </aside>
+        )}
 
         <div className="canvas-wrap">
           <CanvasView controllerRef={ctrl} onChange={sync} />
-          <StepToast chrome={chrome} onStart={onStart} started={started} />
-          <Hint chrome={chrome} onStart={onStart} started={started} />
+          {!readOnly && <StepToast chrome={chrome} onStart={onStart} started={started} />}
+          {!readOnly && <Hint chrome={chrome} onStart={onStart} started={started} />}
         </div>
 
         <aside className="ed-right">
           <div className="rows-panel">
-            <div className="panel-head"><div className="panel-title">Rows</div><Button size="small" icon={<PlusIcon />} onClick={() => { s.addRound(); ctrl.current?.resetInsert(); }}>Row</Button></div>
+            <div className="panel-head"><div className="panel-title">Rows</div>{!readOnly && <Button size="small" icon={<PlusIcon />} onClick={() => { s.addRound(); ctrl.current?.resetInsert(); }}>Row</Button>}</div>
             <div className="rows-list">
               {startRow && (
                 <div className={'row-item start-row' + (onStart ? ' on' : '')}>
@@ -161,7 +172,7 @@ export function EditorView() {
                     <button className="row-main" onClick={() => { s.setActiveRound(r.id); ctrl.current?.resetInsert(); }}>
                       <b>{r.name}</b><small>{count ? summary : 'empty'}</small>
                     </button>
-                    <Dropdown trigger={['click']} menu={{
+                    {!readOnly && <Dropdown trigger={['click']} menu={{
                       items: [
                         { key: 'rename', icon: <EditIcon />, label: 'Rename' },
                         ...(working.length > 1 ? [{ key: 'del', icon: <DeleteIcon />, label: 'Delete row', danger: true }] : []),
@@ -172,14 +183,14 @@ export function EditorView() {
                       },
                     }}>
                       <Button type="text" size="small" icon={<MoreIcon />} />
-                    </Dropdown>
+                    </Dropdown>}
                   </div>
                 );
               })}
             </div>
           </div>
           <div className="ed-right-scroll">
-            <div className="panel"><div className="panel-title">Selection</div><Inspector pat={pat} ctrl={ctrl} /></div>
+            <div className="panel"><div className="panel-title">Selection</div><Inspector pat={pat} ctrl={ctrl} readOnly={readOnly} /></div>
             <div className="panel"><div className="panel-title">Legend</div><Legend pat={pat} /></div>
           </div>
         </aside>
@@ -234,13 +245,13 @@ function Palette({ pat, chrome, ctrl }: { pat: import('../core/types').Pattern; 
   );
 }
 
-function Inspector({ pat, ctrl }: { pat: import('../core/types').Pattern; ctrl: React.MutableRefObject<CanvasController | null>; }) {
+function Inspector({ pat, ctrl, readOnly }: { pat: import('../core/types').Pattern; ctrl: React.MutableRefObject<CanvasController | null>; readOnly?: boolean; }) {
   const s = useStore();
   const sel = [...s.selection];
   const items = sel.map((id) => pat.stitches.find((x) => x.id === id)).filter(Boolean) as Stitch[];
   if (!items.length) return (
     <div className="muted small insp-empty">
-      <p>Nothing selected. In <b>Select</b> mode, click a stitch or drag a box.</p>
+      <p>{readOnly ? <>This is a <b>read-only</b> version. Click a stitch to inspect it.</> : <>Nothing selected. In <b>Select</b> mode, click a stitch or drag a box.</>}</p>
       <p>Selected stitches reveal their framework:</p>
       <ul className="insp-legend">
         <li><span className="sw" style={{ background: ORIGIN }} /> origin</li>
@@ -258,34 +269,34 @@ function Inspector({ pat, ctrl }: { pat: import('../core/types').Pattern; ctrl: 
     <div className="inspector">
       <p className="muted small">{items.length} stitch{items.length > 1 ? 'es' : ''} selected</p>
       <label className="field"><span>Type</span>
-        <Select size="small" value={sameType ? first.type : undefined} placeholder="(mixed)" style={{ width: '100%' }}
+        <Select size="small" disabled={readOnly} value={sameType ? first.type : undefined} placeholder="(mixed)" style={{ width: '100%' }}
           onChange={(v) => s.updateSelection({ type: v })}
           options={STITCH_ORDER.map((t) => ({ value: t, label: STITCHES[t].name }))} />
       </label>
       <label className="field"><span>Colour</span>
-        <ColorPicker value={first.color || INK} onChangeComplete={(c) => s.updateSelection({ color: c.toHexString() })}
+        <ColorPicker value={first.color || INK} disabled={readOnly} onChangeComplete={(c) => s.updateSelection({ color: c.toHexString() })}
           allowClear onClear={() => s.updateSelection({ color: null })} showText />
       </label>
       {post && (
         <label className="field"><span>Length</span>
-          <Slider min={10} max={70} value={Math.round(first.len ?? defaultLen(first.type))}
+          <Slider min={10} max={70} disabled={readOnly} value={Math.round(first.len ?? defaultLen(first.type))}
             onChange={(v) => s.liveUpdateSelection({ len: v })} onChangeComplete={() => s.endLive()} />
         </label>
       )}
       {chains.length > 0 && (
         <label className="field row"><span>Auto-position chain{chains.length > 1 ? 's' : ''}</span>
-          <Switch size="small" checked={allAuto} onChange={(v) => s.setChainAuto(v)} />
+          <Switch size="small" disabled={readOnly} checked={allAuto} onChange={(v) => s.setChainAuto(v)} />
         </label>
       )}
       <label className="field row"><span>Mirror</span>
-        <Switch size="small" checked={first.mirror} onChange={(v) => s.updateSelection({ mirror: v })} />
+        <Switch size="small" disabled={readOnly} checked={first.mirror} onChange={(v) => s.updateSelection({ mirror: v })} />
       </label>
-      <div className="insp-acts">
+      {!readOnly && <div className="insp-acts">
         <Tooltip title="Rotate −15°"><Button size="small" icon={<RotateLeftIcon />} onClick={() => s.rotateSelectionBy(-15)} /></Tooltip>
         <Tooltip title="Rotate +15°"><Button size="small" icon={<RotateRightIcon />} onClick={() => s.rotateSelectionBy(15)} /></Tooltip>
         {items.length === 1 && <Button size="small" icon={<OriginIcon />} onClick={() => { ctrl.current?.setMode('insert'); ctrl.current?.setOrigin(first.id); }}>Set as origin</Button>}
         <Button size="small" danger icon={<DeleteIcon />} onClick={() => s.deleteSelection()}>Delete</Button>
-      </div>
+      </div>}
     </div>
   );
 }

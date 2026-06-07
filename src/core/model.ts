@@ -5,11 +5,11 @@
 import { uid, nowISO, deepClone } from './util';
 import { isStart } from './symbols';
 import type {
-  Project, Pattern, Round, Stitch, Base, Resources, PatternKind, StitchType, ProjectFile,
+  Project, ProjectVersion, VersionStatus, Pattern, Round, Stitch, Base, Resources, PatternKind, StitchType, ProjectFile,
 } from './types';
 
 export const FILE_FORMAT = 'stitchgrid-studio';
-export const FILE_VERSION = 2;
+export const FILE_VERSION = 3; // v3: projects hold versions (draft/published/outdated)
 
 export interface PatternTypeInfo { id: PatternKind; name: string; worked: string; available: boolean; }
 export const PATTERN_TYPES: Record<PatternKind, PatternTypeInfo> = {
@@ -43,16 +43,54 @@ export function emptyResources(): Resources {
   return { yarns: [], links: [], notes: [], variations: [] };
 }
 
-export function newProject(name?: string): Project {
+export function newVersion(label = 'v1', status: VersionStatus = 'draft'): ProjectVersion {
   return {
-    id: uid('prj'),
-    name: name || 'Untitled project',
-    description: '',
+    id: uid('ver'),
+    label,
+    status,
     patterns: [],
     resources: emptyResources(),
     createdAt: nowISO(),
     updatedAt: nowISO(),
+    publishedAt: null,
   };
+}
+
+export function newProject(name?: string): Project {
+  const v = newVersion('v1', 'draft');
+  return {
+    id: uid('prj'),
+    name: name || 'Untitled project',
+    description: '',
+    versions: [v],
+    activeVersionId: v.id,
+    createdAt: nowISO(),
+    updatedAt: nowISO(),
+  };
+}
+
+// ---- version helpers -------------------------------------------------------
+// The version currently selected for viewing/editing (with sensible fallbacks).
+export function activeVersion(prj: Project): ProjectVersion {
+  return prj.versions.find((v) => v.id === prj.activeVersionId)
+    ?? publishedVersion(prj)
+    ?? prj.versions[prj.versions.length - 1]!;
+}
+export function publishedVersion(prj: Project): ProjectVersion | undefined {
+  return prj.versions.find((v) => v.status === 'published');
+}
+export function draftVersion(prj: Project): ProjectVersion | undefined {
+  return prj.versions.find((v) => v.status === 'draft');
+}
+// For cards/thumbnails: prefer the live published version, else whatever's active.
+export function displayVersion(prj: Project): ProjectVersion {
+  return publishedVersion(prj) ?? activeVersion(prj);
+}
+// Next "vN" label, one past the highest existing numbered version.
+export function nextVersionLabel(prj: Project): string {
+  let max = 0;
+  for (const v of prj.versions) { const m = /^v(\d+)$/.exec(v.label); if (m) max = Math.max(max, +m[1]!); }
+  return 'v' + (max + 1);
 }
 
 // ---- normalisation / migration --------------------------------------------
@@ -108,12 +146,49 @@ function normalizeResources(r: any = {}): Resources {
   return res;
 }
 
+function normalizeStatus(s: any): VersionStatus {
+  return s === 'published' || s === 'outdated' || s === 'draft' ? s : 'draft';
+}
+
+function normalizeVersion(v: any = {}, fallbackLabel = 'v1'): ProjectVersion {
+  const ver = newVersion(typeof v.label === 'string' && v.label ? v.label : fallbackLabel, normalizeStatus(v.status));
+  if (v.id) ver.id = v.id;
+  ver.patterns = Array.isArray(v.patterns) ? v.patterns.map(normalizePattern) : [];
+  ver.resources = normalizeResources(v.resources);
+  ver.createdAt = v.createdAt || ver.createdAt;
+  ver.updatedAt = v.updatedAt || ver.updatedAt;
+  ver.publishedAt = v.publishedAt || (ver.status === 'published' ? ver.updatedAt : null);
+  return ver;
+}
+
+// At most one Published version: if data carries several, keep the most recently
+// published and demote the rest to Outdated.
+function enforceSinglePublished(versions: ProjectVersion[]): void {
+  const pub = versions.filter((v) => v.status === 'published');
+  if (pub.length <= 1) return;
+  pub.sort((a, b) => (a.publishedAt || '').localeCompare(b.publishedAt || ''));
+  for (let i = 0; i < pub.length - 1; i++) pub[i]!.status = 'outdated';
+}
+
 export function normalizeProject(p: any = {}): Project {
   const prj = newProject(p.name);
   if (p.id) prj.id = p.id;
   prj.description = p.description || '';
-  prj.patterns = Array.isArray(p.patterns) ? p.patterns.map(normalizePattern) : [];
-  prj.resources = normalizeResources(p.resources);
+  if (Array.isArray(p.versions) && p.versions.length) {
+    prj.versions = p.versions.map((v: any, i: number) => normalizeVersion(v, 'v' + (i + 1)));
+  } else {
+    // Migrate a legacy project ({ patterns, resources }) into a single draft version.
+    prj.versions = [normalizeVersion({
+      patterns: p.patterns, resources: p.resources, status: 'draft', label: 'v1',
+      createdAt: p.createdAt, updatedAt: p.updatedAt,
+    })];
+  }
+  enforceSinglePublished(prj.versions);
+  const active = prj.versions.find((v) => v.id === p.activeVersionId)
+    ?? publishedVersion(prj)
+    ?? draftVersion(prj)
+    ?? prj.versions[0]!;
+  prj.activeVersionId = active.id;
   prj.createdAt = p.createdAt || prj.createdAt;
   prj.updatedAt = p.updatedAt || prj.updatedAt;
   return prj;

@@ -9,7 +9,7 @@ import {
   chainOrder, spacesForRound, pickBase, successorInRound, chainFrom,
   defaultOriginId, basePoint,
 } from '../src/core/connectivity';
-import { newProject, newPattern, normalizeProject, projectToFile, projectFromFile, startRowId } from '../src/core/model';
+import { newProject, newPattern, normalizeProject, projectToFile, projectFromFile, startRowId, activeVersion, publishedVersion, draftVersion } from '../src/core/model';
 import { store } from '../src/core/store';
 import { summarizeRound } from '../src/core/files';
 import { sampleProject } from '../src/core/sample';
@@ -106,7 +106,10 @@ test('basePoint resolves stitch + space', () => {
 test('newProject / newPattern shape', () => {
   const p = newProject('X');
   assert.equal(p.name, 'X');
-  assert.deepEqual(Object.keys(p.resources).sort(), ['links', 'notes', 'variations', 'yarns']);
+  assert.equal(p.versions.length, 1);
+  assert.equal(p.versions[0]!.status, 'draft');
+  assert.equal(p.activeVersionId, p.versions[0]!.id);
+  assert.deepEqual(Object.keys(activeVersion(p).resources).sort(), ['links', 'notes', 'variations', 'yarns']);
   const pat = newPattern('Sq');
   assert.equal(pat.type, 'granny');
   assert.equal(pat.rounds.length, 2);            // Start row + Round 1 from the outset
@@ -115,20 +118,27 @@ test('newProject / newPattern shape', () => {
 });
 test('normalizeProject tolerates junk + drops orphan stitches', () => {
   const p = normalizeProject({ name: 'M', patterns: [{ type: 'granny', rounds: [{ id: 'r1', name: 'R1' }], stitches: [{ type: 'dc', round: 'r1', x: 1, y: 2 }, { type: 'dc', round: 'GONE' }, { junk: true }] }] });
-  assert.equal(p.patterns[0]!.stitches.length, 1);
+  assert.equal(activeVersion(p).patterns[0]!.stitches.length, 1);
+});
+test('normalizeProject migrates a legacy project into one draft version', () => {
+  const p = normalizeProject({ name: 'Legacy', patterns: [{ type: 'granny', rounds: [{ id: 'r1', name: 'R1' }], stitches: [] }], resources: { yarns: [{ name: 'Cotton' }] } });
+  assert.equal(p.versions.length, 1);
+  assert.equal(p.versions[0]!.status, 'draft');
+  assert.equal(activeVersion(p).patterns.length, 1);
+  assert.equal(activeVersion(p).resources.yarns[0]!.name, 'Cotton');
 });
 test('projectToFile / projectFromFile round-trip', () => {
   const p = sampleProject();
   const file = projectToFile(p);
   assert.equal(file.format, 'stitchgrid-studio');
   const back = projectFromFile(JSON.parse(JSON.stringify(file)))!;
-  assert.equal(back.patterns[0]!.stitches.length, p.patterns[0]!.stitches.length);
+  assert.equal(activeVersion(back).patterns[0]!.stitches.length, activeVersion(p).patterns[0]!.stitches.length);
   assert.ok(projectFromFile(p));
 });
 test('normalizeProject migrates a start that shared a working row', () => {
   const p = normalizeProject({ name: 'M', patterns: [{ type: 'granny', rounds: [{ id: 'r1', name: 'Round 1' }], activeRound: 'r1',
     stitches: [{ id: 'ring', type: 'mr', round: 'r1', x: 0, y: 0 }, { id: 'd', type: 'dc', round: 'r1', origin: 'ring', x: 0, y: 0 }] }] });
-  const pat = p.patterns[0]!;
+  const pat = activeVersion(p).patterns[0]!;
   assert.equal(pat.rounds.length, 2);
   const r = pat.stitches.find((s) => s.type === 'mr')!;
   assert.equal(r.round, pat.rounds[0]!.id);
@@ -229,9 +239,9 @@ test('store: pattern type guard + resources', () => {
   const yid = store.addResource(pid, 'yarns', { name: 'Cotton', hex: '#fff' })!;
   assert.ok(yid);
   store.updateResource(pid, 'yarns', yid, { brand: 'Acme' });
-  assert.equal(store.getProject(pid)!.resources.yarns[0]!.brand, 'Acme');
+  assert.equal(activeVersion(store.getProject(pid)!).resources.yarns[0]!.brand, 'Acme');
   store.removeResource(pid, 'yarns', yid);
-  assert.equal(store.getProject(pid)!.resources.yarns.length, 0);
+  assert.equal(activeVersion(store.getProject(pid)!).resources.yarns.length, 0);
 });
 test('store: evenRound fans stitches to equal radius', () => {
   const pid = store.createProject('E');
@@ -249,6 +259,59 @@ test('store: evenRound fans stitches to equal radius', () => {
   assert.ok(radii.every((r2) => Math.abs(r2 - avg) < 1.5));
 });
 
+test('store: version lifecycle — publish, new draft, outdate, isolation', () => {
+  const pid = store.createProject('V');
+  // a fresh project has a single draft
+  const prj = () => store.getProject(pid)!;
+  assert.equal(prj().versions.length, 1);
+  assert.equal(activeVersion(prj()).status, 'draft');
+
+  // edit the draft
+  const pat1 = store.createPattern(pid, 'Sq')!;
+  assert.ok(pat1);
+
+  // publish it
+  store.publishVersion(pid);
+  assert.equal(publishedVersion(prj())!.label, 'v1');
+  assert.equal(draftVersion(prj()), undefined);
+  assert.ok(publishedVersion(prj())!.publishedAt);
+
+  // published version is read-only: createPattern is refused
+  assert.equal(store.createPattern(pid, 'Nope'), null);
+  assert.equal(activeVersion(prj()).patterns.length, 1);
+
+  // start a new draft — snapshots the published content into a fresh version
+  const draftId = store.createDraft(pid)!;
+  assert.equal(prj().versions.length, 2);
+  assert.equal(draftVersion(prj())!.id, draftId);
+  assert.equal(draftVersion(prj())!.label, 'v2');
+  assert.equal(draftVersion(prj())!.patterns.length, 1, 'draft copies the published patterns');
+  assert.notEqual(draftVersion(prj())!.patterns[0]!.id, publishedVersion(prj())!.patterns[0]!.id, 'snapshot gets fresh ids');
+
+  // calling createDraft again just returns the existing draft (one at a time)
+  assert.equal(store.createDraft(pid), draftId);
+  assert.equal(prj().versions.length, 2);
+
+  // editing the draft must not touch the still-published v1
+  const pubPatCount = publishedVersion(prj())!.patterns.length;
+  store.createPattern(pid, 'Extra');
+  assert.equal(draftVersion(prj())!.patterns.length, 2);
+  assert.equal(publishedVersion(prj())!.patterns.length, pubPatCount, 'published version is undisturbed');
+
+  // publishing the draft outdates the old published version
+  store.publishVersion(pid);
+  assert.equal(publishedVersion(prj())!.label, 'v2');
+  assert.equal(prj().versions.filter((v) => v.status === 'outdated').length, 1);
+  assert.equal(prj().versions.find((v) => v.label === 'v1')!.status, 'outdated');
+
+  // discard a fresh draft → falls back to the published version
+  store.createDraft(pid);
+  assert.equal(prj().versions.length, 3);
+  store.discardDraft(pid);
+  assert.equal(prj().versions.length, 2);
+  assert.equal(activeVersion(prj()).status, 'published');
+});
+
 // ---- files -----------------------------------------------------------------
 test('summarizeRound collapses runs', () => {
   const pat = newPattern('S');
@@ -258,7 +321,7 @@ test('summarizeRound collapses runs', () => {
   assert.equal(summarizeRound(pat, rid), '3 dc, ch 2, dc');
 });
 test('chartToSVG emits a valid root with a legend', () => {
-  const svg = chartToSVG(sampleProject().patterns[0]!, { title: 'X' });
+  const svg = chartToSVG(activeVersion(sampleProject()).patterns[0]!, { title: 'X' });
   assert.ok(svg.startsWith('<svg') && svg.trim().endsWith('</svg>'));
   assert.ok(svg.includes('Legend'));
 });

@@ -4,14 +4,15 @@
 
 import { uid, deepClone, nowISO } from './util';
 import {
-  newProject, newPattern, newRound, normalizeProject,
+  newProject, newPattern, newRound, newVersion, normalizeProject,
+  activeVersion, publishedVersion, draftVersion, nextVersionLabel,
   startRowId, isStartRow, PATTERN_TYPES, FILE_FORMAT, FILE_VERSION,
 } from './model';
 import { isStart, isRealStitch } from './symbols';
 import { topOfStitch, buildStitchShapes } from './render';
 import { chainOrder } from './connectivity';
 import type {
-  Project, Pattern, Round, Stitch, Base, StitchType, ResourceKind, Resources, UIState,
+  Project, ProjectVersion, Pattern, Round, Stitch, Base, StitchType, ResourceKind, Resources, UIState,
 } from './types';
 
 const SAVE_KEY = 'stitchgridstudio:v2';
@@ -63,9 +64,21 @@ class Store {
   // ---- lookups -------------------------------------------------------------
   getProject(id: string | null): Project | null { return this.state.library.projects.find((p) => p.id === id) ?? null; }
   currentProject(): Project | null { return this.getProject(this.state.ui.projectId); }
+  // The active version of the current project — patterns + resources live here.
+  currentVersion(): ProjectVersion | null { const p = this.currentProject(); return p ? activeVersion(p) : null; }
+  // Edits only apply to a Draft; Published/Outdated versions are read-only.
+  private isDraftActive(): boolean { const v = this.currentVersion(); return !!v && v.status === 'draft'; }
   currentPattern(): Pattern | null {
-    const p = this.currentProject();
-    return p ? p.patterns.find((x) => x.id === this.state.ui.patternId) ?? null : null;
+    const v = this.currentVersion();
+    return v ? v.patterns.find((x) => x.id === this.state.ui.patternId) ?? null : null;
+  }
+  // Locate a pattern (current project's active version first, then anywhere).
+  private findPattern(patternId: string): { prj: Project; version: ProjectVersion; pat: Pattern } | null {
+    const cur = this.currentProject();
+    if (cur) { const v = activeVersion(cur); const pat = v.patterns.find((p) => p.id === patternId); if (pat) return { prj: cur, version: v, pat }; }
+    for (const prj of this.state.library.projects)
+      for (const v of prj.versions) { const pat = v.patterns.find((p) => p.id === patternId); if (pat) return { prj, version: v, pat }; }
+    return null;
   }
   byIdMap(): Map<string, Stitch> {
     const pat = this.currentPattern();
@@ -81,7 +94,7 @@ class Store {
   }
   openPattern(projectId: string, patternId: string): void {
     const prj = this.getProject(projectId);
-    if (!prj || !prj.patterns.find((p) => p.id === patternId)) return;
+    if (!prj || !activeVersion(prj).patterns.find((p) => p.id === patternId)) return;
     this.state.ui = { view: 'editor', projectId, patternId };
     this.clearEditor(); this.emit();
   }
@@ -99,7 +112,7 @@ class Store {
   importProject(obj: unknown): string {
     const prj = normalizeProject(obj);
     prj.id = uid('prj');
-    prj.patterns.forEach((p) => { p.id = uid('pat'); });
+    this.reidVersions(prj);
     prj.name = this.uniqueProjectName(prj.name);
     this.state.library.projects.unshift(prj); this.emit(); return prj.id;
   }
@@ -108,10 +121,16 @@ class Store {
     if (!src) return null;
     const copy = normalizeProject(deepClone(src));
     copy.id = uid('prj');
-    copy.patterns.forEach((p) => { p.id = uid('pat'); });
+    this.reidVersions(copy);
     copy.name = this.uniqueProjectName(src.name + ' (copy)');
     copy.createdAt = nowISO(); copy.updatedAt = nowISO();
     this.state.library.projects.unshift(copy); this.emit(); return copy.id;
+  }
+  // Fresh ids for every version + pattern (keeping the active pointer valid).
+  private reidVersions(prj: Project): void {
+    const map = new Map<string, string>();
+    for (const v of prj.versions) { const nid = uid('ver'); map.set(v.id, nid); v.id = nid; v.patterns.forEach((p) => { p.id = uid('pat'); }); }
+    prj.activeVersionId = map.get(prj.activeVersionId) ?? prj.versions[0]!.id;
   }
   private uniqueProjectName(name: string): string {
     const names = new Set(this.state.library.projects.map((p) => p.name));
@@ -119,36 +138,96 @@ class Store {
     let i = 2; while (names.has(`${name} ${i}`)) i++; return `${name} ${i}`;
   }
 
+  // ---- versions ------------------------------------------------------------
+  setActiveVersion(projectId: string, versionId: string): void {
+    const prj = this.getProject(projectId);
+    if (!prj || !prj.versions.find((v) => v.id === versionId)) return;
+    prj.activeVersionId = versionId;
+    this.clearEditor();
+    // If we were in the editor on a pattern that doesn't exist in this version, step back.
+    if (this.state.ui.view === 'editor' && !activeVersion(prj).patterns.find((p) => p.id === this.state.ui.patternId)) {
+      this.state.ui = { view: 'project', projectId, patternId: null };
+    }
+    this.emit();
+  }
+  // Publish the active draft: the prior published version (if any) becomes Outdated.
+  publishVersion(projectId: string): void {
+    const prj = this.getProject(projectId);
+    if (!prj) return;
+    const draft = draftVersion(prj);
+    if (!draft) return;
+    for (const v of prj.versions) if (v.status === 'published') v.status = 'outdated';
+    draft.status = 'published';
+    draft.publishedAt = nowISO(); draft.updatedAt = nowISO();
+    prj.activeVersionId = draft.id; prj.updatedAt = nowISO();
+    this.emit();
+  }
+  // Start a new editable draft from the published (or active) version. Only one
+  // draft at a time — if one exists, switch to it instead. Returns its id.
+  createDraft(projectId: string): string | null {
+    const prj = this.getProject(projectId);
+    if (!prj) return null;
+    const existing = draftVersion(prj);
+    if (existing) { this.setActiveVersion(projectId, existing.id); return existing.id; }
+    const source = publishedVersion(prj) ?? activeVersion(prj);
+    const draft = newVersion(nextVersionLabel(prj), 'draft');
+    draft.patterns = deepClone(source.patterns).map((p) => { p.id = uid('pat'); return p; });
+    draft.resources = deepClone(source.resources);
+    prj.versions.push(draft);
+    prj.activeVersionId = draft.id; prj.updatedAt = nowISO();
+    this.clearEditor();
+    // the editor's pattern id won't exist in the freshly-id'd draft — step back to the project
+    if (this.state.ui.view === 'editor') this.state.ui = { view: 'project', projectId, patternId: null };
+    this.emit();
+    return draft.id;
+  }
+  // Discard the draft and fall back to the published (or latest) version.
+  discardDraft(projectId: string): void {
+    const prj = this.getProject(projectId);
+    if (!prj) return;
+    const draft = draftVersion(prj);
+    if (!draft || prj.versions.length < 2) return; // always keep at least one version
+    prj.versions = prj.versions.filter((v) => v.id !== draft.id);
+    prj.activeVersionId = (publishedVersion(prj) ?? prj.versions[prj.versions.length - 1]!).id;
+    prj.updatedAt = nowISO();
+    this.clearEditor();
+    if (this.state.ui.view === 'editor') this.state.ui = { view: 'project', projectId, patternId: null };
+    this.emit();
+  }
+
   // ---- patterns ------------------------------------------------------------
   createPattern(projectId: string, name?: string, type: 'granny' | 'round' | 'flat' = 'granny'): string | null {
     const prj = this.getProject(projectId);
     if (!prj || !PATTERN_TYPES[type] || !PATTERN_TYPES[type].available) return null;
+    const ver = activeVersion(prj);
+    if (ver.status !== 'draft') return null; // only draft versions are editable
     const pat = newPattern(name, type);
-    prj.patterns.push(pat); prj.updatedAt = nowISO(); this.emit(); return pat.id;
+    ver.patterns.push(pat); ver.updatedAt = nowISO(); prj.updatedAt = nowISO(); this.emit(); return pat.id;
   }
   renamePattern(patternId: string, name: string): void {
-    const prj = this.currentProject() || this.ownerOfPattern(patternId);
-    const pat = prj && prj.patterns.find((p) => p.id === patternId);
-    if (prj && pat) { pat.name = name; pat.updatedAt = nowISO(); prj.updatedAt = nowISO(); this.emit(); }
+    const found = this.findPattern(patternId);
+    if (!found || found.version.status !== 'draft') return;
+    found.pat.name = name; found.pat.updatedAt = nowISO();
+    found.version.updatedAt = nowISO(); found.prj.updatedAt = nowISO(); this.emit();
   }
   deletePattern(projectId: string, patternId: string): void {
     const prj = this.getProject(projectId);
     if (!prj) return;
-    prj.patterns = prj.patterns.filter((p) => p.id !== patternId);
-    prj.updatedAt = nowISO();
+    const ver = activeVersion(prj);
+    if (ver.status !== 'draft') return;
+    ver.patterns = ver.patterns.filter((p) => p.id !== patternId);
+    ver.updatedAt = nowISO(); prj.updatedAt = nowISO();
     if (this.state.ui.patternId === patternId) this.openProject(projectId); else this.emit();
   }
   duplicatePattern(projectId: string, patternId: string): string | null {
     const prj = this.getProject(projectId);
-    const src = prj && prj.patterns.find((p) => p.id === patternId);
-    if (!prj || !src) return null;
+    const ver = prj && activeVersion(prj);
+    const src = ver && ver.patterns.find((p) => p.id === patternId);
+    if (!prj || !ver || !src || ver.status !== 'draft') return null;
     const copy = deepClone(src);
     copy.id = uid('pat'); copy.name = src.name + ' (copy)';
     copy.createdAt = nowISO(); copy.updatedAt = nowISO();
-    prj.patterns.push(copy); prj.updatedAt = nowISO(); this.emit(); return copy.id;
-  }
-  private ownerOfPattern(patternId: string): Project | null {
-    return this.state.library.projects.find((p) => p.patterns.some((x) => x.id === patternId)) ?? null;
+    ver.patterns.push(copy); ver.updatedAt = nowISO(); prj.updatedAt = nowISO(); this.emit(); return copy.id;
   }
 
   // ---- resources -----------------------------------------------------------
@@ -158,23 +237,29 @@ class Store {
   addResource<K extends ResourceKind>(projectId: string, kind: K, item: Partial<Omit<Resources[K][number], 'id'>>): string | null {
     const prj = this.getProject(projectId);
     if (!prj) return null;
-    const list = prj.resources[kind] as Resources[K][number][];
+    const ver = activeVersion(prj);
+    if (ver.status !== 'draft') return null;
+    const list = ver.resources[kind] as Resources[K][number][];
     const withId = { id: uid(kind.slice(0, 3)), ...item } as Resources[K][number];
     list.push(withId);
-    prj.updatedAt = nowISO(); this.emit(); return withId.id;
+    ver.updatedAt = nowISO(); prj.updatedAt = nowISO(); this.emit(); return withId.id;
   }
   updateResource<K extends ResourceKind>(projectId: string, kind: K, itemId: string, patch: Partial<Omit<Resources[K][number], 'id'>>): void {
     const prj = this.getProject(projectId);
     if (!prj) return;
-    const it = (prj.resources[kind] as Resources[K][number][]).find((x) => x.id === itemId);
-    if (it) { Object.assign(it, patch); prj.updatedAt = nowISO(); this.emit(); }
+    const ver = activeVersion(prj);
+    if (ver.status !== 'draft') return;
+    const it = (ver.resources[kind] as Resources[K][number][]).find((x) => x.id === itemId);
+    if (it) { Object.assign(it, patch); ver.updatedAt = nowISO(); prj.updatedAt = nowISO(); this.emit(); }
   }
   removeResource(projectId: string, kind: ResourceKind, itemId: string): void {
     const prj = this.getProject(projectId);
     if (!prj) return;
-    const list = prj.resources[kind] as { id: string }[];
+    const ver = activeVersion(prj);
+    if (ver.status !== 'draft') return;
+    const list = ver.resources[kind] as { id: string }[];
     const i = list.findIndex((x) => x.id === itemId);
-    if (i >= 0) { list.splice(i, 1); prj.updatedAt = nowISO(); this.emit(); }
+    if (i >= 0) { list.splice(i, 1); ver.updatedAt = nowISO(); prj.updatedAt = nowISO(); this.emit(); }
   }
 
   // ---- editor: history -----------------------------------------------------
@@ -188,11 +273,12 @@ class Store {
   }
   editTransact(fn: (pat: Pattern) => void): void {
     const pat = this.currentPattern();
-    if (!pat) return;
+    if (!pat || !this.isDraftActive()) return; // published/outdated versions are read-only
     this.pushHistory(pat);
     fn(pat);
     autoLayoutChains(pat);
     pat.updatedAt = nowISO();
+    const ver = this.currentVersion(); if (ver) ver.updatedAt = nowISO();
     const prj = this.currentProject(); if (prj) prj.updatedAt = nowISO();
     this.pruneSelection(pat);
     this.touch();
@@ -324,7 +410,7 @@ class Store {
   // avoids force-rendering the whole editor on every pointer move.
   dragBegin(): void { this.dragSnapped = false; }
   dragBy(dx: number, dy: number): void {
-    if (!this.selection.size || (!dx && !dy)) return;
+    if (!this.selection.size || (!dx && !dy) || !this.isDraftActive()) return;
     const pat = this.currentPattern();
     if (!pat) return;
     if (!this.dragSnapped) { this.pushHistory(pat); this.dragSnapped = true; }
@@ -341,7 +427,7 @@ class Store {
   // entry: it snapshots once, then emits live so the canvas updates as you drag.
   // endLive() resets so the next gesture starts a fresh history entry.
   liveUpdateSelection(patch: StitchPatch): void {
-    if (!this.selection.size) return;
+    if (!this.selection.size || !this.isDraftActive()) return;
     const pat = this.currentPattern();
     if (!pat) return;
     if (!this.liveSnapped) { this.pushHistory(pat); this.liveSnapped = true; }
@@ -447,7 +533,7 @@ class Store {
       const prj = this.getProject(ui.projectId);
       if (prj) {
         this.state.ui.projectId = prj.id;
-        const pat = prj.patterns.find((p) => p.id === ui.patternId);
+        const pat = activeVersion(prj).patterns.find((p) => p.id === ui.patternId);
         if (pat && ui.view === 'editor') { this.state.ui.patternId = pat.id; this.state.ui.view = 'editor'; }
         else this.state.ui.view = 'project';
       }

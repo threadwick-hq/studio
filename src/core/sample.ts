@@ -1,7 +1,7 @@
 // A worked granny square so the app opens on something real.
 
 import { uid } from './util';
-import { newProject, newPattern, normalizeProject } from './model';
+import { newProject, newPattern, normalizeProject, activeVersion } from './model';
 import { fromPolar, norm360 } from './geometry';
 import { topOfStitch } from './render';
 import { isRealStitch } from './symbols';
@@ -85,6 +85,6 @@ export function sampleProject(): Project {
 
   pat.stitches = stitches;
   pat.view = { scale: 1.5, panX: 0, panY: 0 };
-  prj.patterns.push(pat);
+  activeVersion(prj).patterns.push(pat);
   return normalizeProject(prj);
 }

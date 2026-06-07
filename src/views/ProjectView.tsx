@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  App, Button, Card, Dropdown, Form, Input, Modal, Radio, Select, Empty, Typography,
+  App, Alert, Button, Card, Dropdown, Form, Input, Modal, Radio, Select, Empty, Typography,
 } from 'antd';
 import {
   BackIcon, PlusIcon, DownloadIcon, PdfIcon, DeleteIcon,
@@ -9,9 +9,11 @@ import {
 import type { ComponentType } from 'react';
 import { useStore } from '../useStore';
 import { Thumb } from '../components/Thumb';
+import { VersionTag } from '../components/VersionTag';
+import { statusLabel } from '../components/versionStatus';
 import { exportProjectFile, printProject } from '../core/files';
-import { PATTERN_TYPES } from '../core/model';
-import type { Project, Pattern, ResourceKind, Yarn, LinkRes, NoteRes, VariationRes } from '../core/types';
+import { PATTERN_TYPES, activeVersion } from '../core/model';
+import type { ProjectVersion, Pattern, ResourceKind, Yarn, LinkRes, NoteRes, VariationRes } from '../core/types';
 
 const { Title } = Typography;
 
@@ -35,6 +37,21 @@ export function ProjectView() {
   const [resForm] = Form.useForm<ResForm>();
 
   if (!prj) return null;
+  const ver = activeVersion(prj);
+  const isDraft = ver.status === 'draft';
+  const hasDraft = prj.versions.some((v) => v.status === 'draft');
+
+  const publish = () => modal.confirm({
+    title: `Publish ${ver.label}?`,
+    content: 'This becomes the live version. Any currently published version is marked Outdated.',
+    okText: 'Publish', onOk: () => s.publishVersion(prj.id),
+  });
+  const discard = () => modal.confirm({
+    title: `Discard draft ${ver.label}?`,
+    content: 'Unpublished changes in this draft will be removed. This can’t be undone.',
+    okText: 'Discard draft', okButtonProps: { danger: true }, onOk: () => s.discardDraft(prj.id),
+  });
+  const startDraft = () => s.createDraft(prj.id);
 
   const createPattern = () => {
     patForm.validateFields().then((v) => {
@@ -71,16 +88,39 @@ export function ProjectView() {
         <Input variant="borderless" className="proj-name" value={prj.name} onChange={(e) => s.renameProject(prj.id, e.target.value)} />
         <Input.TextArea variant="borderless" className="proj-desc" autoSize value={prj.description} placeholder="Add a description…" onChange={(e) => s.updateProject(prj.id, { description: e.target.value })} />
 
+        <div className="version-bar">
+          <span className="version-label">Version</span>
+          <Select size="small" className="version-select" value={prj.activeVersionId}
+            onChange={(id) => s.setActiveVersion(prj.id, id)}
+            options={prj.versions.map((v) => ({ value: v.id, label: `${v.label} · ${statusLabel(v.status)}` }))} />
+          <VersionTag status={ver.status} />
+          <div className="grow" />
+          {isDraft ? (<>
+            {prj.versions.length > 1 && <Button size="small" onClick={discard}>Discard draft</Button>}
+            <Button size="small" type="primary" onClick={publish}>Publish</Button>
+          </>) : (
+            <Button size="small" type="primary" icon={<EditIcon />} onClick={startDraft}>
+              {hasDraft ? 'Go to draft' : 'Edit as new draft'}
+            </Button>
+          )}
+        </div>
+
+        {!isDraft && (
+          <Alert className="version-readonly" type="info" showIcon
+            message={`You’re viewing ${ver.label} (${statusLabel(ver.status)}) — read-only.`}
+            description="Create a draft to make changes without disturbing this version." />
+        )}
+
         <section className="section">
-          <div className="section-head"><Title level={4}>Patterns</Title><Button type="primary" icon={<PlusIcon />} onClick={() => setNewPat(true)}>New pattern</Button></div>
-          {prj.patterns.length === 0 ? (
+          <div className="section-head"><Title level={4}>Patterns</Title>{isDraft && <Button type="primary" icon={<PlusIcon />} onClick={() => setNewPat(true)}>New pattern</Button>}</div>
+          {ver.patterns.length === 0 ? (
             <Empty className="section-empty" image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={<><div className="empty-head">No patterns yet</div><p className="muted">Add your first granny square to start charting.</p></>}>
-              <Button type="primary" icon={<PlusIcon />} onClick={() => setNewPat(true)}>New pattern</Button>
+              description={<><div className="empty-head">No patterns {isDraft ? 'yet' : 'in this version'}</div>{isDraft && <p className="muted">Add your first granny square to start charting.</p>}</>}>
+              {isDraft && <Button type="primary" icon={<PlusIcon />} onClick={() => setNewPat(true)}>New pattern</Button>}
             </Empty>
           ) : (
             <div className="card-grid">
-              {prj.patterns.map((pat: Pattern) => (
+              {ver.patterns.map((pat: Pattern) => (
                 <Card key={pat.id} hoverable className="proj-card" styles={{ body: { padding: 14 } }}
                   cover={<div className="card-cover" onClick={() => s.openPattern(prj.id, pat.id)}><Thumb pattern={pat} /></div>}>
                   <div className="card-row">
@@ -88,7 +128,7 @@ export function ProjectView() {
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); s.openPattern(prj.id, pat.id); } }}>
                       <Card.Meta title={pat.name} description={`${(PATTERN_TYPES[pat.type] || {}).name || pat.type} · ${pat.stitches.length} stitches`} />
                     </div>
-                    <Dropdown trigger={['click']} menu={{
+                    {isDraft && <Dropdown trigger={['click']} menu={{
                       items: [
                         { key: 'dup', icon: <CopyIcon />, label: 'Duplicate' },
                         { type: 'divider' },
@@ -101,11 +141,11 @@ export function ProjectView() {
                       },
                     }}>
                       <Button type="text" size="small" aria-label="Pattern actions" icon={<MoreIcon />} onClick={(e) => e.stopPropagation()} />
-                    </Dropdown>
+                    </Dropdown>}
                   </div>
                 </Card>
               ))}
-              <button className="card-new" onClick={() => setNewPat(true)}><PlusIcon /><span>New pattern</span></button>
+              {isDraft && <button className="card-new" onClick={() => setNewPat(true)}><PlusIcon /><span>New pattern</span></button>}
             </div>
           )}
         </section>
@@ -114,12 +154,12 @@ export function ProjectView() {
           <div className="section-head"><Title level={4}>Resources</Title></div>
           <div className="res-grid">
             {(Object.keys(RES_META) as ResourceKind[]).map((kind) => {
-              const meta = RES_META[kind]; const count = prj.resources[kind].length;
+              const meta = RES_META[kind]; const count = ver.resources[kind].length;
               return (
                 <Card key={kind} size="small" className="res-col"
                   title={<span className="res-title"><meta.Icon /> {meta.title}{count > 0 && <span className="res-count">{count}</span>}</span>}
-                  extra={<Button size="small" icon={<PlusIcon />} onClick={() => openRes(kind, null)}>{meta.add}</Button>}>
-                  <ResourceList project={prj} kind={kind} onEdit={(it) => openRes(kind, it)} onDelete={(id) => s.removeResource(prj.id, kind, id)} />
+                  extra={isDraft ? <Button size="small" icon={<PlusIcon />} onClick={() => openRes(kind, null)}>{meta.add}</Button> : null}>
+                  <ResourceList version={ver} kind={kind} readOnly={!isDraft} onEdit={(it) => openRes(kind, it)} onDelete={(id) => s.removeResource(prj.id, kind, id)} />
                 </Card>
               );
             })}
@@ -172,18 +212,18 @@ export function ProjectView() {
   );
 }
 
-function ResourceList({ project, kind, onEdit, onDelete }: { project: Project; kind: ResourceKind; onEdit: (it: ResItem) => void; onDelete: (id: string) => void; }) {
-  const items = project.resources[kind] as ResItem[]; // widen union-of-arrays to array-of-union
-  if (!items.length) return <p className="muted small">{RES_META[kind].empty}</p>;
+function ResourceList({ version, kind, readOnly, onEdit, onDelete }: { version: ProjectVersion; kind: ResourceKind; readOnly?: boolean; onEdit: (it: ResItem) => void; onDelete: (id: string) => void; }) {
+  const items = version.resources[kind] as ResItem[]; // widen union-of-arrays to array-of-union
+  if (!items.length) return <p className="muted small">{readOnly ? 'Nothing here in this version.' : RES_META[kind].empty}</p>;
   return (
     <div className="res-list">
       {items.map((it) => (
         <div key={it.id} className="res-item">
           <div className="res-text">{resourceLine(kind, it)}</div>
-          <div className="res-acts">
+          {!readOnly && <div className="res-acts">
             <Button type="text" size="small" icon={<EditIcon />} onClick={() => onEdit(it)} />
             <Button type="text" size="small" danger icon={<DeleteIcon />} onClick={() => onDelete(it.id)} />
-          </div>
+          </div>}
         </div>
       ))}
     </div>

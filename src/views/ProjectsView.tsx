@@ -7,7 +7,9 @@ import { useStore } from '../useStore';
 import { Logo } from '../Logo';
 import { Thumb } from '../components/Thumb';
 import { Glyph } from '../components/Glyph';
+import { VersionTag } from '../components/VersionTag';
 import { exportProjectFile, importProjectFile } from '../core/files';
+import { displayVersion } from '../core/model';
 import type { Project } from '../core/types';
 
 function fmtDate(iso: string): string {
@@ -56,18 +58,23 @@ export function ProjectsView() {
 
         {projects.length ? (
           <div className="card-grid">
-            {projects.map((p) => (
+            {projects.map((p) => {
+              const dv = displayVersion(p);
+              return (
               <Card
                 key={p.id}
                 hoverable
                 className="proj-card"
                 styles={{ body: { padding: 14 } }}
-                cover={<div className="card-cover" onClick={() => s.openProject(p.id)}><Thumb pattern={p.patterns[0]} /></div>}
+                cover={<div className="card-cover" onClick={() => s.openProject(p.id)}>
+                  <Thumb pattern={dv.patterns[0]} />
+                  <span className="card-status"><VersionTag status={dv.status} /></span>
+                </div>}
               >
                 <div className="card-row">
                   <div className="card-main" role="button" tabIndex={0} onClick={() => s.openProject(p.id)}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); s.openProject(p.id); } }}>
-                    <Card.Meta title={p.name} description={`${p.patterns.length} pattern${p.patterns.length === 1 ? '' : 's'} · ${fmtDate(p.updatedAt)}`} />
+                    <Card.Meta title={p.name} description={`${dv.label} · ${dv.patterns.length} pattern${dv.patterns.length === 1 ? '' : 's'} · ${fmtDate(p.updatedAt)}`} />
                   </div>
                   <Dropdown
                     trigger={['click']}
@@ -90,7 +97,8 @@ export function ProjectsView() {
                   </Dropdown>
                 </div>
               </Card>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="empty-wrap">

@@ -48,12 +48,29 @@ export interface VariationRes { id: string; title: string; body: string; }
 export interface Resources { yarns: Yarn[]; links: LinkRes[]; notes: NoteRes[]; variations: VariationRes[]; }
 export type ResourceKind = keyof Resources;
 
+// A project keeps an ordered list of VERSIONS. Exactly one can be Published (the
+// "working" version others see); a single editable Draft can sit alongside it,
+// and superseded versions become Outdated. Patterns + resources live inside the
+// version, so a new draft can be edited without disturbing the published one.
+export type VersionStatus = 'draft' | 'published' | 'outdated';
+
+export interface ProjectVersion {
+  id: string;
+  label: string;               // e.g. "v1", "v2"
+  status: VersionStatus;
+  patterns: Pattern[];
+  resources: Resources;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string | null;  // when it was published (null until then)
+}
+
 export interface Project {
   id: string;
   name: string;
   description: string;
-  patterns: Pattern[];
-  resources: Resources;
+  versions: ProjectVersion[];
+  activeVersionId: string;     // which version the UI is currently showing
   createdAt: string;
   updatedAt: string;
 }
