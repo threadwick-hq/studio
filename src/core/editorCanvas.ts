@@ -138,6 +138,7 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
     svg.innerHTML = out;
     svg.appendChild(cursorLayer);
     drawCursor(lastU);
+    applyCursor();
   }
 
   function guidesMarkup(): string {
@@ -164,6 +165,12 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
   }
 
   function clearCursor(): void { cursorLayer.innerHTML = ''; }
+  function applyCursor(): void {
+    svg.style.cursor = panning ? 'grabbing'
+      : (spaceDown || mode === 'pan') ? 'grab'
+      : mode === 'insert' ? 'crosshair'
+      : 'default';
+  }
   function originGlyph(): string {
     const o = originId ? store.byIdMap().get(originId) : undefined;
     if (!o) return '';
@@ -281,7 +288,7 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
     }
   }
 
-  function startPan(e: PointerEvent): void { panning = { x: e.clientX, y: e.clientY }; svg.setPointerCapture(e.pointerId); }
+  function startPan(e: PointerEvent): void { panning = { x: e.clientX, y: e.clientY }; svg.setPointerCapture(e.pointerId); applyCursor(); }
 
   function onMove(e: PointerEvent): void {
     if ((drag || panning || marquee) && e.buttons === 0) { endGesture(e); return; }
@@ -323,6 +330,7 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
     try { svg.releasePointerCapture(e.pointerId); } catch { /* not captured */ }
     if (wasDrag) store.commitGesture(); // one React/autosave flush after a move-drag
     drawCursor(toUser(e.clientX, e.clientY));
+    applyCursor();
   }
 
   function onWheel(e: WheelEvent): void {
@@ -373,6 +381,7 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
       if (m === mode) return;
       mode = m;
       if (m === 'insert') resetInsert(); else clearCursor();
+      applyCursor();
       onChange(); scheduleRender();
     },
     getArmed: () => armed,
@@ -388,7 +397,7 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
       this.setMode('select');
       return true;
     },
-    setSpace(v: boolean) { spaceDown = v; },
+    setSpace(v: boolean) { spaceDown = v; applyCursor(); },
     syncView() { const p = pat(); if (p) view = { ...p.view }; applyViewBox(); },
     destroy() {
       try { ro.disconnect(); } catch { /* gone */ }

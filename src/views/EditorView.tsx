@@ -28,6 +28,7 @@ interface Chrome { mode: Mode; armed: StitchType; phase: 'base' | 'head'; nextId
 export function EditorView() {
   const s = useStore();
   const pat = s.currentPattern();
+  const proj = s.currentProject();
   const ctrl = useRef<CanvasController | null>(null);
   const [chrome, setChrome] = useState<Chrome>({ mode: 'select', armed: 'dc', phase: 'base', nextId: null });
   const [help, setHelp] = useState(false);
@@ -92,7 +93,7 @@ export function EditorView() {
   return (
     <div className="editor">
       <header className="topbar">
-        <Button type="text" icon={<BackIcon />} onClick={() => s.backToProject()}>Project</Button>
+        <Tooltip title="Back to project"><Button type="text" icon={<BackIcon />} onClick={() => s.backToProject()}><span className="back-label">{proj?.name ?? 'Project'}</span></Button></Tooltip>
         <Input variant="borderless" className="pat-name" value={pat.name} onChange={(e) => s.renamePattern(pat.id, e.target.value)} />
         <span className="badge">Granny square</span>
         <div className="grow" />
@@ -112,13 +113,17 @@ export function EditorView() {
       </header>
 
       <div className="toolbar">
-        <Segmented value={chrome.mode} onChange={(v) => ctrl.current?.setMode(v as Mode)} options={[{ label: 'Select', value: 'select' }, { label: 'Insert', value: 'insert' }]} />
+        <Segmented value={chrome.mode} onChange={(v) => ctrl.current?.setMode(v as Mode)}
+          options={[
+            { label: (<span>Select <kbd className="seg-kbd">V</kbd></span>), value: 'select' },
+            { label: (<span>Insert <kbd className="seg-kbd">I</kbd></span>), value: 'insert' },
+          ]} />
         <div className="grow" />
-        <Button size="small" onClick={() => s.evenRound(pat.activeRound)}>Even out row</Button>
+        <Tooltip title="Fan the current row out evenly"><Button size="small" onClick={() => s.evenRound(pat.activeRound)}>Even out row</Button></Tooltip>
         <div className="tool-view">
-          <Button size="small" type="text" icon={<ZoomOutIcon />} onClick={() => ctrl.current?.zoomOut()} />
-          <Button size="small" icon={<FitIcon />} onClick={() => ctrl.current?.fit()}>Fit</Button>
-          <Button size="small" type="text" icon={<ZoomInIcon />} onClick={() => ctrl.current?.zoomIn()} />
+          <Tooltip title="Zoom out"><Button size="small" type="text" icon={<ZoomOutIcon />} onClick={() => ctrl.current?.zoomOut()} /></Tooltip>
+          <Tooltip title="Fit to view"><Button size="small" icon={<FitIcon />} onClick={() => ctrl.current?.fit()}>Fit</Button></Tooltip>
+          <Tooltip title="Zoom in"><Button size="small" type="text" icon={<ZoomInIcon />} onClick={() => ctrl.current?.zoomIn()} /></Tooltip>
         </div>
       </div>
 
@@ -238,7 +243,17 @@ function Inspector({ pat, ctrl }: { pat: import('../core/types').Pattern; ctrl: 
   const s = useStore();
   const sel = [...s.selection];
   const items = sel.map((id) => pat.stitches.find((x) => x.id === id)).filter(Boolean) as Stitch[];
-  if (!items.length) return <p className="muted small">Nothing selected. In <b>Select</b> mode, click a stitch or drag a box. Selected stitches show their origin (blue), base (orange) and head.</p>;
+  if (!items.length) return (
+    <div className="muted small insp-empty">
+      <p>Nothing selected. In <b>Select</b> mode, click a stitch or drag a box.</p>
+      <p>Selected stitches reveal their framework:</p>
+      <ul className="insp-legend">
+        <li><span className="sw" style={{ background: '#5cb3ff' }} /> origin</li>
+        <li><span className="sw" style={{ background: '#e8830c' }} /> base / space</li>
+        <li><span className="sw" style={{ background: '#2f7bff' }} /> head</li>
+      </ul>
+    </div>
+  );
   const first = items[0]!;
   const sameType = items.every((x) => x.type === first.type);
   const post = isRealStitch(first.type) && first.type !== 'ch';
