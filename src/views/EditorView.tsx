@@ -126,7 +126,8 @@ export function EditorView() {
 
       {readOnly && (
         <Alert className="ed-readonly" type="info" showIcon banner
-          message={<>Viewing <b>{ver?.label}</b> ({ver ? statusLabel(ver.status) : ''}) — read-only.</>}
+          message="You are viewing a read-only version"
+          description={ver ? `Version ${ver.label} is ${statusLabel(ver.status).toLowerCase()} and cannot be edited.` : undefined}
           action={proj && <Button size="small" type="primary" icon={<EditIcon />} onClick={() => s.createDraft(proj.id)}>Edit as new draft</Button>} />
       )}
 

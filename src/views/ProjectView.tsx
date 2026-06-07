@@ -107,8 +107,8 @@ export function ProjectView() {
 
         {!isDraft && (
           <Alert className="version-readonly" type="info" showIcon
-            message={`You’re viewing ${ver.label} (${statusLabel(ver.status)}) — read-only.`}
-            description="Create a draft to make changes without disturbing this version." />
+            message="You are viewing a read-only version"
+            description={`Version ${ver.label} is ${statusLabel(ver.status).toLowerCase()} and cannot be edited.`} />
         )}
 
         <section className="section">
