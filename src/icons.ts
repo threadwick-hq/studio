@@ -19,4 +19,8 @@ export {
   RotateCameraLeft as RotateLeftIcon,
   RotateCameraRight as RotateRightIcon,
   Position as OriginIcon,
+  DropletHalf as YarnIcon,
+  Link as LinkIcon,
+  Notes as NotesIcon,
+  Palette as VariationIcon,
 } from 'iconoir-react';

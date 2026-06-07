@@ -64,7 +64,8 @@ export function ProjectsView() {
                 cover={<div className="card-cover" onClick={() => s.openProject(p.id)}><Thumb pattern={p.patterns[0]} /></div>}
               >
                 <div className="card-row">
-                  <div className="card-main" onClick={() => s.openProject(p.id)}>
+                  <div className="card-main" role="button" tabIndex={0} onClick={() => s.openProject(p.id)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); s.openProject(p.id); } }}>
                     <Card.Meta title={p.name} description={`${p.patterns.length} pattern${p.patterns.length === 1 ? '' : 's'} · ${fmtDate(p.updatedAt)}`} />
                   </div>
                   <Dropdown
@@ -84,7 +85,7 @@ export function ProjectsView() {
                       },
                     }}
                   >
-                    <Button type="text" size="small" icon={<MoreIcon />} onClick={(e) => e.stopPropagation()} />
+                    <Button type="text" size="small" aria-label="Project actions" icon={<MoreIcon />} onClick={(e) => e.stopPropagation()} />
                   </Dropdown>
                 </div>
               </Card>
