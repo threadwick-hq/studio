@@ -50,3 +50,52 @@ Run typecheck, lint, tests, and build before pushing.
 - **Import / export, SVG / PNG, print-PDF:** `src/core/files.ts`
 - **Store + `localStorage` persistence:** `src/core/store.ts`
 - **Domain types:** `src/core/types.ts`
+
+## Versioning model (invariants)
+
+A `Project` owns `versions[]` + `activeVersionId`; **patterns and resources live
+inside a `ProjectVersion`, not on the project.** See the README "Versions"
+section for the user-facing behaviour. Hold these invariants when touching it:
+
+- **At most one `draft` and at most one `published`** version per project.
+  Publishing a draft outdates the prior published one (`store.publishVersion`).
+- **Only a draft is editable.** Every mutation routes through the active version
+  and is guarded by `isDraftActive()` in the store — published/outdated versions
+  are read-only at the **data layer**, not just hidden in the UI. New
+  pattern/resource/editor mutations must go through the active version and
+  respect this guard.
+- **Read patterns/resources via `activeVersion(prj)`** (or `store.currentVersion()`),
+  never `prj.patterns` / `prj.resources` (those no longer exist).
+- **`createDraft` snapshots** the published (or active) version with **fresh ids**
+  for the new version and its patterns — so a stale editor `patternId` won't
+  resolve; it steps back to the project view on purpose.
+- **Migration:** `normalizeProject` wraps any legacy `{ patterns, resources }`
+  project into a single draft version and enforces a single published version.
+
+## Roadmap & known gaps
+
+- **View mode (planned, large):** a dedicated, richer read-only experience for
+  viewing projects is coming. The read-only editor here is intentionally minimal
+  — build the real viewer on top of `activeVersion` / `publishedVersion` /
+  `setActiveVersion` and the status model rather than expanding the editor.
+- **Sharing (next):** share a project's *published* version with other users;
+  the version model is the foundation for it.
+- **Export-everything gap:** per-project JSON export exists, but there's **no
+  one-click "export all projects" yet** (the whole library is already available
+  via `store.serialize()`). Wiring this — plus matching import and a round-trip
+  test — is the outstanding item for the data-ownership principle above.
+
+## Gotchas
+
+- **Editor CSS grids.** `.editor` is a row grid (`auto auto 1fr`) and `.ed-body`
+  a 3-column grid (`220px 1fr 286px`). Conditionally adding/removing a direct
+  child (e.g. the read-only banner, or hiding the left palette) silently breaks
+  the tracks. Use modifier classes (`.editor.has-banner`, `.ed-body.readonly`)
+  instead of removing grid children blind.
+- **Verifying UI changes.** `npm run build` then `npx vite preview --port <p>`,
+  and drive it headless with puppeteer — seed/inspect state via
+  `window.stitchgrid.store`, and screenshot. Name scratch scripts `_*.mjs`
+  (gitignored) and delete them after; never `git add -A` them into a commit.
+- **antd is v5** (`5.29.3`); the MCP server is pinned to v5 docs in `.mcp.json`.
+  Prefer current v5 APIs (`variant`, `destroyOnHidden`, `menu={{items}}`,
+  `styles={{body}}`, `App.useApp()`), not the deprecated ones.
