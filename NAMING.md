@@ -79,6 +79,37 @@ word here, so the least familiar and hardest to pronounce on sight
 
 ---
 
+## Using a descriptor ("Designer", "Studio", "Charts", …)
+
+A name doesn't have to be one coined word — a distinctive word **+ a category
+descriptor** is just as ownable, googles cleanly, and says what the tool does.
+Descriptor palette: **Designer · Studio · Charts · Workshop · Atelier · Lab**.
+
+**Route 1 — any clean root above + a descriptor** (inherits the vetting, since
+the lead word already has zero product collisions):
+
+- **Hooklet Studio** / **Hooklet Designer**
+- **Roundlet Studio** / **Roundlet Designer**
+- **Rondure Studio** / **Rondure Designer**
+- **Annulet Studio** · **Verticil Studio**
+
+**Route 2 — an evocative word the descriptor disambiguates** (verified — no
+crochet/design product uses these):
+
+- **Concentric** — *Concentric Crochet* / *Concentric — Crochet Chart Designer.*
+  Names the concentric‑rounds structure directly and is distinctive in the craft
+  space. (The bare word is used by some unrelated tech firms, so keep "Crochet"
+  in the name to disambiguate.)
+- **Magic Ring Studio** — instantly recognizable to crocheters; it's how every
+  in‑the‑round piece starts. Caveat: "magic ring" is a generic *technique* term,
+  so it's weaker for trademark/SEO — the tutorials will outrank you.
+
+Heads‑up on the incumbents this pattern bumps into — *Crochet Studio*, *Stitch
+Fiddle*, *Intwined Pattern Studio*, *Stitch Painter* — so the **lead word must
+carry the distinctiveness**; the descriptor alone won't.
+
+---
+
 ## Strong names that were rejected (and why)
 
 So these don't get re‑suggested — each *seems* available but fails the bare
@@ -98,4 +129,5 @@ search:
 | **Crochetery / Crochette** | Used by many existing crochet shops/handles. |
 | **Crochetier** | It's simply the word for *a person who crochets* (+ an existing brand). |
 | **Picot / Volute / Gyre / Circlet / Ringlet / Umbel / Tessella** | All taken by existing software or companies. |
+| **True Round / Rosette** (+ Designer/Studio) | *TrueRound* is a golf app (`trueround.app`); *Rosette Designer* already exists (a guitar‑rosette design app — direct "…Designer" collision). |
 | **Stitch\*** (incl. the current *StitchGrid*) | Extremely crowded — see top of file. |
