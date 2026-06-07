@@ -1,18 +1,31 @@
 {
   "name": "stitchgrid-studio",
   "version": "1.0.0",
-  "description": "stitchgrid studio — a crochet project designer. Design granny-square stitch charts the way you crochet them, and keep every project (patterns, yarns, links, notes) in one place.",
+  "description": "stitchgrid studio — a crochet project designer. Design granny-square stitch charts the way you crochet them.",
   "type": "module",
-  "scripts": {
-    "start": "node server.js",
-    "serve": "node server.js",
-    "test": "node test/core.test.js",
-    "test:browser": "node test/browser.smoke.mjs"
-  },
-  "keywords": ["crochet", "granny-square", "chart", "svg", "pattern", "designer"],
-  "license": "MIT",
   "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host --port 8080",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "keywords": ["crochet", "granny-square", "chart", "svg", "pattern", "designer", "antd", "react", "typescript"],
+  "license": "MIT",
+  "dependencies": {
+    "@ant-design/icons": "^5.5.2",
+    "antd": "^5.22.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
   "devDependencies": {
-    "puppeteer": "^25.0.0"
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "puppeteer": "^25.1.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
   }
 }
