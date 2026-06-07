@@ -112,15 +112,39 @@ npm run typecheck # strict tsc --noEmit
 
 ## Deployment
 
-Ant Design needs a bundler, so the app is built with Vite into `docs/` (committed,
-`base: './'`). Enable Pages once under **Settings → Pages → Build and deployment →
-Source: *Deploy from a branch* → Branch: `main` / `/docs`**. After that, each time
-`docs/` is rebuilt and pushed to `main` the site redeploys. Run `npm run build`
-before committing UI changes so `docs/` stays in sync.
+The app is built with Vite into `dist/` (git-ignored, `base: './'`) and published
+to GitHub Pages by a workflow (`.github/workflows/deploy.yml`) that runs on every
+push to `main`: it builds, runs the tests, and deploys `dist/`. Enable it once
+under **Settings → Pages → Build and deployment → Source: *GitHub Actions***.
 
-> An Actions workflow that builds and deploys on push would remove the “rebuild
-> docs/ by hand” step, but the automation credential here lacks the `workflow`
-> scope to push files under `.github/workflows/`.
+```yaml
+name: Deploy to GitHub Pages
+on:
+  push: { branches: [main] }
+  workflow_dispatch:
+permissions: { contents: read, pages: write, id-token: write }
+concurrency: { group: pages, cancel-in-progress: true }
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: dist }
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: { name: github-pages, url: '${{ steps.deployment.outputs.page_url }}' }
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+```
 
 ## Roadmap
 
