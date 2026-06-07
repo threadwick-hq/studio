@@ -37,7 +37,9 @@ export function shapesMarkup(shapes: Shape[], color = INK, sw = SW): string {
 // the result. Built objects are only ever read, never mutated.
 const builtCache = new Map<string, Built>();
 export function buildStitchShapes(type: StitchType, len?: number | null): Built {
-  const key = type + '|' + (len ?? '');
+  // round len into the key: the ghost preview feeds sub-pixel floats on every
+  // pointer move, and an unrounded key would grow the cache without bound.
+  const key = type + '|' + (len == null ? '' : Math.round(len));
   let built = builtCache.get(key);
   if (!built) {
     const def = STITCHES[type] ?? STITCHES.dc;

@@ -41,7 +41,7 @@ export function ProjectView() {
       const id = s.createPattern(prj.id, v.name?.trim() || 'Untitled pattern', v.type || 'granny');
       setNewPat(false); patForm.resetFields();
       if (id) s.openPattern(prj.id, id);
-    });
+    }).catch(() => { /* validation errors are shown inline by the form */ });
   };
 
   const openRes = (kind: ResourceKind, item: ResItem | null) => {
@@ -54,7 +54,7 @@ export function ProjectView() {
       if (res.item) s.updateResource(prj.id, res.kind, res.item.id, v);
       else s.addResource(prj.id, res.kind, v);
       setRes(null);
-    });
+    }).catch(() => { /* validation errors are shown inline by the form */ });
   };
 
   return (
