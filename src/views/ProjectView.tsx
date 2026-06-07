@@ -4,8 +4,9 @@ import {
 } from 'antd';
 import {
   BackIcon, PlusIcon, DownloadIcon, PdfIcon, DeleteIcon,
-  CopyIcon, MoreIcon, EditIcon,
+  CopyIcon, MoreIcon, EditIcon, YarnIcon, LinkIcon, NotesIcon, VariationIcon,
 } from '../icons';
+import type { ComponentType } from 'react';
 import { useStore } from '../useStore';
 import { Thumb } from '../components/Thumb';
 import { exportProjectFile, printProject } from '../core/files';
@@ -14,11 +15,11 @@ import type { Project, Pattern, ResourceKind } from '../core/types';
 
 const { Title } = Typography;
 
-const RES_META: Record<ResourceKind, { title: string; add: string; empty: string }> = {
-  yarns: { title: 'Yarns', add: 'Add yarn', empty: 'Track the yarns you used — brand, weight, colour.' },
-  links: { title: 'Links & videos', add: 'Add link', empty: 'Tutorial videos and reference links.' },
-  notes: { title: 'Notes & tips', add: 'Add note', empty: 'Gotchas, gauge, hooks — anything worth remembering.' },
-  variations: { title: 'Variations', add: 'Add variation', empty: 'Colourways and tweaks of this project.' },
+const RES_META: Record<ResourceKind, { title: string; add: string; empty: string; Icon: ComponentType }> = {
+  yarns: { title: 'Yarns', add: 'Add yarn', empty: 'Track the yarns you used — brand, weight, colour.', Icon: YarnIcon },
+  links: { title: 'Links & videos', add: 'Add link', empty: 'Tutorial videos and reference links.', Icon: LinkIcon },
+  notes: { title: 'Notes & tips', add: 'Add note', empty: 'Gotchas, gauge, hooks — anything worth remembering.', Icon: NotesIcon },
+  variations: { title: 'Variations', add: 'Add variation', empty: 'Colourways and tweaks of this project.', Icon: VariationIcon },
 };
 
 type ResItem = Record<string, string>;
@@ -74,45 +75,56 @@ export function ProjectView() {
 
         <section className="section">
           <div className="section-head"><Title level={4}>Patterns</Title><Button type="primary" icon={<PlusIcon />} onClick={() => setNewPat(true)}>New pattern</Button></div>
-          <div className="card-grid">
-            {prj.patterns.map((pat: Pattern) => (
-              <Card key={pat.id} hoverable className="proj-card" styles={{ body: { padding: 14 } }}
-                cover={<div className="card-cover" onClick={() => s.openPattern(prj.id, pat.id)}><Thumb pattern={pat} /></div>}>
-                <div className="card-row">
-                  <div className="card-main" onClick={() => s.openPattern(prj.id, pat.id)}>
-                    <Card.Meta title={pat.name} description={`${(PATTERN_TYPES[pat.type] || {}).name || pat.type} · ${pat.stitches.length} stitches`} />
+          {prj.patterns.length === 0 ? (
+            <Empty className="section-empty" image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={<><div className="empty-head">No patterns yet</div><p className="muted">Add your first granny square to start charting.</p></>}>
+              <Button type="primary" icon={<PlusIcon />} onClick={() => setNewPat(true)}>New pattern</Button>
+            </Empty>
+          ) : (
+            <div className="card-grid">
+              {prj.patterns.map((pat: Pattern) => (
+                <Card key={pat.id} hoverable className="proj-card" styles={{ body: { padding: 14 } }}
+                  cover={<div className="card-cover" onClick={() => s.openPattern(prj.id, pat.id)}><Thumb pattern={pat} /></div>}>
+                  <div className="card-row">
+                    <div className="card-main" role="button" tabIndex={0} onClick={() => s.openPattern(prj.id, pat.id)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); s.openPattern(prj.id, pat.id); } }}>
+                      <Card.Meta title={pat.name} description={`${(PATTERN_TYPES[pat.type] || {}).name || pat.type} · ${pat.stitches.length} stitches`} />
+                    </div>
+                    <Dropdown trigger={['click']} menu={{
+                      items: [
+                        { key: 'dup', icon: <CopyIcon />, label: 'Duplicate' },
+                        { type: 'divider' },
+                        { key: 'del', icon: <DeleteIcon />, label: 'Delete', danger: true },
+                      ],
+                      onClick: ({ key, domEvent }) => {
+                        domEvent.stopPropagation();
+                        if (key === 'dup') s.duplicatePattern(prj.id, pat.id);
+                        else modal.confirm({ title: `Delete pattern “${pat.name}”?`, okText: 'Delete', okButtonProps: { danger: true }, onOk: () => s.deletePattern(prj.id, pat.id) });
+                      },
+                    }}>
+                      <Button type="text" size="small" aria-label="Pattern actions" icon={<MoreIcon />} onClick={(e) => e.stopPropagation()} />
+                    </Dropdown>
                   </div>
-                  <Dropdown trigger={['click']} menu={{
-                    items: [
-                      { key: 'dup', icon: <CopyIcon />, label: 'Duplicate' },
-                      { type: 'divider' },
-                      { key: 'del', icon: <DeleteIcon />, label: 'Delete', danger: true },
-                    ],
-                    onClick: ({ key, domEvent }) => {
-                      domEvent.stopPropagation();
-                      if (key === 'dup') s.duplicatePattern(prj.id, pat.id);
-                      else modal.confirm({ title: `Delete pattern “${pat.name}”?`, okText: 'Delete', okButtonProps: { danger: true }, onOk: () => s.deletePattern(prj.id, pat.id) });
-                    },
-                  }}>
-                    <Button type="text" size="small" icon={<MoreIcon />} onClick={(e) => e.stopPropagation()} />
-                  </Dropdown>
-                </div>
-              </Card>
-            ))}
-            <button className="card-new" onClick={() => setNewPat(true)}><PlusIcon /><span>New pattern</span></button>
-          </div>
+                </Card>
+              ))}
+              <button className="card-new" onClick={() => setNewPat(true)}><PlusIcon /><span>New pattern</span></button>
+            </div>
+          )}
         </section>
 
         <section className="section">
           <div className="section-head"><Title level={4}>Resources</Title></div>
           <div className="res-grid">
-            {(Object.keys(RES_META) as ResourceKind[]).map((kind) => (
-              <Card key={kind} size="small" className="res-col"
-                title={RES_META[kind].title}
-                extra={<Button size="small" icon={<PlusIcon />} onClick={() => openRes(kind, null)}>{RES_META[kind].add}</Button>}>
-                <ResourceList project={prj} kind={kind} onEdit={(it) => openRes(kind, it)} onDelete={(id) => s.removeResource(prj.id, kind, id)} />
-              </Card>
-            ))}
+            {(Object.keys(RES_META) as ResourceKind[]).map((kind) => {
+              const meta = RES_META[kind]; const count = prj.resources[kind].length;
+              return (
+                <Card key={kind} size="small" className="res-col"
+                  title={<span className="res-title"><meta.Icon /> {meta.title}{count > 0 && <span className="res-count">{count}</span>}</span>}
+                  extra={<Button size="small" icon={<PlusIcon />} onClick={() => openRes(kind, null)}>{meta.add}</Button>}>
+                  <ResourceList project={prj} kind={kind} onEdit={(it) => openRes(kind, it)} onDelete={(id) => s.removeResource(prj.id, kind, id)} />
+                </Card>
+              );
+            })}
           </div>
         </section>
       </div>

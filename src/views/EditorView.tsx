@@ -60,6 +60,7 @@ export function EditorView() {
       if (e.key === ' ') { e.preventDefault(); c.setSpace(true); return; }
       if (k === 'v') { c.setMode('select'); return; }
       if (k === 'i') { c.setMode('insert'); return; }
+      if (k === 'p') { c.setMode('pan'); return; }
       if (KEY_TO_TYPE[k]) {
         const cur = s.currentPattern();
         const onStartRow = !!cur && cur.rounds[0]?.id === cur.activeRound;
@@ -97,8 +98,8 @@ export function EditorView() {
         <Input variant="borderless" className="pat-name" value={pat.name} onChange={(e) => s.renamePattern(pat.id, e.target.value)} />
         <span className="badge">Granny square</span>
         <div className="grow" />
-        <Tooltip title="Undo (⌘Z)"><Button type="text" icon={<UndoIcon />} disabled={!s.undoStack.length} onClick={() => s.undo()} /></Tooltip>
-        <Tooltip title="Redo (⇧⌘Z)"><Button type="text" icon={<RedoIcon />} disabled={!s.redoStack.length} onClick={() => s.redo()} /></Tooltip>
+        <Tooltip title="Undo (⌘Z)"><Button type="text" aria-label="Undo" icon={<UndoIcon />} disabled={!s.undoStack.length} onClick={() => s.undo()} /></Tooltip>
+        <Tooltip title="Redo (⇧⌘Z)"><Button type="text" aria-label="Redo" icon={<RedoIcon />} disabled={!s.redoStack.length} onClick={() => s.redo()} /></Tooltip>
         <Dropdown trigger={['click']} menu={{
           items: exportItems,
           onClick: ({ key }) => {
@@ -109,7 +110,7 @@ export function EditorView() {
         }}>
           <Button icon={<DownloadIcon />}>Export</Button>
         </Dropdown>
-        <Tooltip title="How it works"><Button type="text" icon={<HelpIcon />} onClick={() => setHelp(true)} /></Tooltip>
+        <Tooltip title="How it works"><Button type="text" aria-label="How it works" icon={<HelpIcon />} onClick={() => setHelp(true)} /></Tooltip>
       </header>
 
       <div className="toolbar">
@@ -117,13 +118,14 @@ export function EditorView() {
           options={[
             { label: (<span>Select <kbd className="seg-kbd">V</kbd></span>), value: 'select' },
             { label: (<span>Insert <kbd className="seg-kbd">I</kbd></span>), value: 'insert' },
+            { label: (<span>Pan <kbd className="seg-kbd">P</kbd></span>), value: 'pan' },
           ]} />
         <div className="grow" />
         <Tooltip title="Fan the current row out evenly"><Button size="small" onClick={() => s.evenRound(pat.activeRound)}>Even out row</Button></Tooltip>
         <div className="tool-view">
-          <Tooltip title="Zoom out"><Button size="small" type="text" icon={<ZoomOutIcon />} onClick={() => ctrl.current?.zoomOut()} /></Tooltip>
+          <Tooltip title="Zoom out"><Button size="small" type="text" aria-label="Zoom out" icon={<ZoomOutIcon />} onClick={() => ctrl.current?.zoomOut()} /></Tooltip>
           <Tooltip title="Fit to view"><Button size="small" icon={<FitIcon />} onClick={() => ctrl.current?.fit()}>Fit</Button></Tooltip>
-          <Tooltip title="Zoom in"><Button size="small" type="text" icon={<ZoomInIcon />} onClick={() => ctrl.current?.zoomIn()} /></Tooltip>
+          <Tooltip title="Zoom in"><Button size="small" type="text" aria-label="Zoom in" icon={<ZoomInIcon />} onClick={() => ctrl.current?.zoomIn()} /></Tooltip>
         </div>
       </div>
 
@@ -322,7 +324,8 @@ function StepToast({ chrome, onStart, started }: { chrome: Chrome; onStart: bool
 
 function Hint({ chrome, onStart, started }: { chrome: Chrome; onStart: boolean; started: boolean }) {
   let text: string;
-  if (onStart || !started) text = 'Every stitch is worked out from the centre — pick a start to begin';
+  if (chrome.mode === 'pan') text = 'Pan mode — drag anywhere to move the canvas · scroll to zoom · press V or I to leave';
+  else if (onStart || !started) text = 'Every stitch is worked out from the centre — pick a start to begin';
   else if (chrome.mode !== 'insert') text = 'Drag to move · drag empty space to box-select · scroll to zoom · hold Space to pan · press a stitch key to start';
   else if (chrome.armed === 'ch') text = 'Chains flow out of the origin (light blue) · Alt/⌘-click a stitch to work out of it · Esc to leave Insert';
   else if (chrome.phase === 'head') text = 'The bottom sits in the base; the top follows your cursor · Esc to redo the base';

@@ -41,7 +41,7 @@ kbd { font-size: 11px; background: var(--bg); border: 1px solid var(--line); bor
 
 .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
 .proj-card .ant-card-cover, .card-cover { cursor: pointer; }
-.card-cover { height: 150px; background: repeating-conic-gradient(#fbf8f2 0% 25%, #f3ede2 0% 50%) 50% / 22px 22px; display: grid; place-items: center; border-bottom: 1px solid var(--line-2); border-radius: 10px 10px 0 0; overflow: hidden; }
+.card-cover { height: 150px; background: radial-gradient(circle at 50% 42%, #fffdf9, #f3ede2); display: grid; place-items: center; border-bottom: 1px solid var(--line-2); border-radius: 10px 10px 0 0; overflow: hidden; }
 .thumb, .thumb-empty { display: grid; place-items: center; width: 100%; height: 100%; }
 .thumb svg { max-width: 86%; max-height: 86%; height: auto; }
 .thumb-empty { opacity: .7; }
@@ -80,7 +80,19 @@ kbd { font-size: 11px; background: var(--bg); border: 1px solid var(--line); bor
 .back-label { display: inline-block; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
 .seg-kbd { margin-left: 4px; opacity: .55; font-size: 10px; }
 .toolbar { display: flex; align-items: center; gap: 12px; padding: 7px 16px; background: var(--bg-2); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-.tool-view { display: flex; align-items: center; gap: 4px; }
+.tool-view { display: flex; align-items: center; gap: 4px; padding-left: 12px; margin-left: 4px; border-left: 1px solid var(--line); }
+
+/* keyboard focus visibility (custom interactive elements) */
+.chip:focus-visible, .row-main:focus-visible, .card-new:focus-visible, .card-main:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+
+/* resource column header: icon + count */
+.res-title { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; }
+.res-title svg { color: var(--muted); flex: 0 0 auto; }
+.res-count { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--accent-soft); color: var(--accent-d); font-size: 11px; font-weight: 700; }
+
+/* empty states */
+.section-empty { padding: 30px 0 24px; }
+.empty-head { font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
 
 .ed-body { display: grid; grid-template-columns: 220px 1fr 286px; min-height: 0; }
 .ed-left { background: var(--bg-2); border-right: 1px solid var(--line); overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 16px; }

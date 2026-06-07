@@ -128,6 +128,8 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
     applyViewBox();
     const sm = styleMap();
     let out = guidesMarkup();
+    const pp = pat();
+    if (pp && !hasStart(pp)) out += emptyHintMarkup();
     out += '<g class="stitches">';
     for (const st of stitches()) {
       const sty = sm.get(st.id) || {};
@@ -145,6 +147,15 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
     return '<g pointer-events="none" stroke="#d9d2c4" stroke-width="1">' +
       '<line x1="-9" y1="0" x2="9" y2="0"/><line x1="0" y1="-9" x2="0" y2="9"/>' +
       '<circle cx="0" cy="0" r="2" fill="#c8bfae" stroke="none"/></g>';
+  }
+
+  // a gentle prompt drawn in the empty canvas before a start is chosen
+  function emptyHintMarkup(): string {
+    return '<g pointer-events="none" opacity="0.55" text-anchor="middle" '
+      + 'font-family="system-ui,Segoe UI,Arial">'
+      + '<circle cx="0" cy="-30" r="16" fill="none" stroke="#cbb6a6" stroke-width="2.4"/>'
+      + '<text x="0" y="6" font-size="15" font-weight="600" fill="#b1a48f">Pick a starting stitch</text>'
+      + '<text x="0" y="28" font-size="12" fill="#bcae99">every stitch is worked out from the centre</text></g>';
   }
 
   function selectionMarkup(): string {
