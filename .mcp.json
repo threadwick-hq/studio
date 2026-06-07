@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "ant-design": {
+      "command": "npx",
+      "args": ["-y", "antd-mcp"]
+    }
+  }
+}

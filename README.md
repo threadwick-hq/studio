@@ -69,13 +69,40 @@ npm run preview    # serve the production build (http://localhost:8080)
 
 The UI is **React 18 + Ant Design v5** in **strict TypeScript**, built with Vite.
 
+## AI-assisted development
+
+Because the UI is built on **Ant Design**, the repo ships an **Ant Design MCP
+server** in [`.mcp.json`](.mcp.json). Any MCP-aware assistant (Claude Code,
+Cursor, …) that opens this repo can query live antd component docs, props and
+usage while it writes code — so generated UI stays idiomatic to the design
+system.
+
+```jsonc
+{
+  "mcpServers": {
+    "ant-design": { "command": "npx", "args": ["-y", "antd-mcp"] }
+  }
+}
+```
+
+The pinned server is the community [`antd-mcp`](https://www.npmjs.com/package/antd-mcp)
+package (runs over stdio via `npx`). To use Ant Design's **official** server
+instead, replace the `ant-design` entry with the config from
+[ant.design → MCP](https://ant.design/docs/react/mcp). In Claude Code, enable
+the project server when prompted (or run `claude mcp list`).
+
 ## Exporting
 
-- **Project file** — a portable `.stitchgrid.json` (also autosaved to your
-  browser). Import re-adds it as a fresh copy.
-- **SVG** — vector master, editable in Illustrator/Inkscape.
-- **PNG** — high-resolution raster (3× by default).
-- **PDF** — the project composer (Save as PDF from the print dialog).
+Every project autosaves to your browser; these are the ways out:
+
+- **Project file** — a portable `.stitchgrid.json`. Import re-adds it as a fresh copy.
+- **Export pattern…** (editor hamburger menu) — a dialog to pick a **format**
+  (SVG / PNG / Printable PDF) and **settings**: include title, include legend,
+  background (white/transparent, SVG & PNG) and PNG resolution (1×–3×).
+- **Printable PDF** (project page) — the whole project, print-tailored: every
+  pattern's chart and written instructions, plus resources with **links rendered
+  as QR codes** and no embedded media (scan from paper). Save as PDF from the
+  print dialog.
 
 ## Architecture
 
