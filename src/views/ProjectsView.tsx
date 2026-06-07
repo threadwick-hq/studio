@@ -4,6 +4,7 @@ import {
   PlusIcon, ImportIcon, MoreIcon, DownloadIcon, CopyIcon, DeleteIcon,
 } from '../icons';
 import { useStore } from '../useStore';
+import { Logo } from '../Logo';
 import { Thumb } from '../components/Thumb';
 import { Glyph } from '../components/Glyph';
 import { exportProjectFile, importProjectFile } from '../core/files';
@@ -44,7 +45,7 @@ export function ProjectsView() {
   return (
     <div className="home">
       <header className="topbar">
-        <div className="brand"><span className="brand-mark">✿</span> stitchgrid <span className="brand-sub">studio</span></div>
+        <div className="brand"><Logo className="brand-mark" size={22} /> stitchgrid <span className="brand-sub">studio</span></div>
         <div className="grow" />
         <Button icon={<ImportIcon />} onClick={onImport}>Import…</Button>
         <Button type="primary" icon={<PlusIcon />} onClick={() => setNewOpen(true)}>New project</Button>
