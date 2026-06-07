@@ -5,7 +5,7 @@
 import { uid, deepClone, nowISO } from './util';
 import {
   newProject, newPattern, newRound, normalizeProject,
-  startRoundId, isStartRound, PATTERN_TYPES, FILE_FORMAT, FILE_VERSION,
+  startRowId, isStartRow, PATTERN_TYPES, FILE_FORMAT, FILE_VERSION,
 } from './model';
 import { isStart, isRealStitch } from './symbols';
 import { topOfStitch, buildStitchShapes } from './render';
@@ -214,13 +214,12 @@ class Store {
   setActiveRound(roundId: string): void {
     const pat = this.currentPattern();
     if (!pat || !pat.rounds.find((r) => r.id === roundId)) return;
-    if (isStartRound(pat, roundId)) return;
-    pat.activeRound = roundId; this.emit();
+    pat.activeRound = roundId; this.emit(); // the Start row is selectable too
   }
   addRound(name?: string): string | null {
     let id: string | null = null;
     this.editTransact((pat) => {
-      const startId = startRoundId(pat);
+      const startId = startRowId(pat);
       const working = pat.rounds.filter((r) => r.id !== startId).length;
       const r = newRound(name || 'Round ' + (working + 1));
       pat.rounds.push(r); pat.activeRound = r.id; id = r.id;
@@ -229,15 +228,15 @@ class Store {
   }
   renameRound(roundId: string, name: string): void {
     this.editTransact((pat) => {
-      if (isStartRound(pat, roundId)) return;
+      if (isStartRow(pat, roundId)) return; // the Start row name is fixed
       const r = pat.rounds.find((x) => x.id === roundId);
       if (r) r.name = name;
     });
   }
   removeRound(roundId: string): void {
     this.editTransact((pat) => {
-      if (isStartRound(pat, roundId)) return;
-      const working = pat.rounds.filter((r) => !isStartRound(pat, r.id)).length;
+      if (isStartRow(pat, roundId)) return; // can't remove the Start row
+      const working = pat.rounds.filter((r) => !isStartRow(pat, r.id)).length;
       if (working <= 1) return;
       const removed = new Set(pat.stitches.filter((s) => s.round === roundId).map((s) => s.id));
       pat.rounds = pat.rounds.filter((r) => r.id !== roundId);
@@ -247,29 +246,32 @@ class Store {
         if (s.base && s.base.kind === 'stitch' && removed.has(s.base.id)) s.base = null;
         if (s.base && s.base.kind === 'space' && (removed.has(s.base.ids[0]) || removed.has(s.base.ids[1]))) s.base = null;
       }
-      if (!pat.rounds.find((r) => r.id === pat.activeRound) || isStartRound(pat, pat.activeRound)) {
-        const firstWorking = pat.rounds.find((r) => !isStartRound(pat, r.id));
+      if (!pat.rounds.find((r) => r.id === pat.activeRound) || isStartRow(pat, pat.activeRound)) {
+        const firstWorking = pat.rounds.find((r) => !isStartRow(pat, r.id));
         pat.activeRound = (firstWorking || pat.rounds[pat.rounds.length - 1]!).id;
       }
     });
   }
 
   // ---- editor: start -------------------------------------------------------
+  // The start marker goes (alone) into the existing Start row (row 0). After it's
+  // chosen we hop to the first working row so you can crochet straight away.
   setStart(type: StitchType): string | null {
     if (!isStart(type)) return null;
     let id: string | null = null;
     this.editTransact((pat) => {
       pat.start = type;
+      const startRow = pat.rounds[0];
+      if (!startRow) return;
       let start = pat.stitches.find((s) => isStart(s.type));
       if (start) { start.type = type; }
       else {
-        const r0 = newRound('Round 0');
-        pat.rounds.unshift(r0);
-        start = { id: uid('st'), round: r0.id, type, origin: null, base: null, x: 0, y: 0, rot: 0, len: null, color: null, mirror: false };
+        start = { id: uid('st'), round: startRow.id, type, origin: null, base: null, x: 0, y: 0, rot: 0, len: null, color: null, mirror: false };
         pat.stitches.unshift(start);
-        if (isStartRound(pat, pat.activeRound)) pat.activeRound = (pat.rounds[1] || pat.rounds[0])!.id;
       }
       id = start.id;
+      const working = pat.rounds.find((r) => r.id !== startRow.id);
+      if (working) pat.activeRound = working.id;
     });
     this.lastPlacedId = id;
     return id;

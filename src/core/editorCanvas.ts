@@ -4,12 +4,13 @@
 // one-click chains that flow off the origin). React mounts it via a ref.
 
 import { clamp, round } from './util';
-import { buildStitchShapes, shapesMarkup, stitchToSVG, topOfStitch, contentBounds } from './render';
+import { buildStitchShapes, shapesMarkup, stitchToSVG, topOfStitch, contentBounds, INK } from './render';
 import {
   pickBase, basePoint, nearestStitch, spacesForRound, successorInRound,
   chainFrom, defaultOriginId,
 } from './connectivity';
 import { isStart } from './symbols';
+import { hasStart } from './model';
 import type { Store } from './store';
 import type { Stitch, StitchType, Base, BaseHit, Point } from './types';
 
@@ -171,8 +172,9 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
     return `<g transform="translate(${round(o.x)} ${round(o.y)}) rotate(${round(o.rot || 0)})${m}">${shapesMarkup(shapes, ORIGIN)}</g>`;
   }
   function ghostStitch(base: Point, len: number | null, rot: number): string {
+    // a faded version of the real stitch (ink at 50%), not a recoloured one
     const { shapes } = buildStitchShapes(armed, len);
-    return `<g transform="translate(${round(base.x)} ${round(base.y)}) rotate(${round(rot)})" opacity="0.62">${shapesMarkup(shapes, GHOST)}</g>`;
+    return `<g transform="translate(${round(base.x)} ${round(base.y)}) rotate(${round(rot)})" opacity="0.5">${shapesMarkup(shapes, INK)}</g>`;
   }
   function spaceDots(emphasis: BaseHit | null): string {
     let out = '';
@@ -186,6 +188,8 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
   function drawCursor(u: Point): void {
     lastU = u;
     if (mode !== 'insert' || drag || marquee || panning) { clearCursor(); return; }
+    const p = pat();
+    if (!p || p.rounds[0]?.id === p.activeRound || !hasStart(p)) { clearCursor(); return; }
     const og = originGlyph();
     if (armed === 'ch') {
       const o = originId ? store.byIdMap().get(originId) : undefined;
@@ -226,6 +230,10 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
   }
 
   function insertDown(e: PointerEvent, u: Point): void {
+    const p = pat();
+    if (!p) return;
+    const onStartRow = p.rounds[0]?.id === p.activeRound;
+    if (onStartRow || !hasStart(p)) return; // the Start row holds only the start (placed via the palette); nothing else until one exists
     if (e.altKey || e.metaKey) {
       const hit = (e.target as Element).closest('[data-id]');
       const id = hit ? hit.getAttribute('data-id') : (nearestStitch(stitches(), u.x, u.y, 60)?.id ?? null);

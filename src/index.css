@@ -15,6 +15,8 @@
 
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
+/* antd's <App> wrapper sits between #root and our layout — let height pass through */
+#root > .ant-app { height: 100%; }
 body { background: var(--bg); color: var(--ink); font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
 .grow { flex: 1; }
 .muted { color: var(--muted); }
