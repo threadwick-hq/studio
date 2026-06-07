@@ -110,6 +110,31 @@ carry the distinctiveness**; the descriptor alone won't.
 
 ---
 
+## If you might expand beyond crochet (knitting, etc.)
+
+Good news: **four of the five finalists are already craft‑agnostic.** They evoke
+*rounds / rings / whorls* — which knitting produces just as much as crochet (both
+work in the round and chart their work). Nothing in them says "crochet":
+
+- **Roundlet · Rondure · Annulet · Verticil** — all craft‑neutral as‑is.
+- **Concentric** (*Concentric Studio* / *Concentric — Pattern Designer*) — names
+  the concentric‑rounds structure; fully neutral.
+- Only **Hooklet** is crochet‑specific (a *hook* is crochet's tool; knitting uses
+  needles) — set it aside if you want to stay open to knitting.
+
+Use a craft‑neutral descriptor too: *Pattern Designer*, *Chart Designer*, *Studio*
+— not *Crochet Designer*.
+
+**Reality check:** knit‑and‑crochet is the *most crowded* corner of this market,
+so every generic fibre word is already taken — `Yarn*`, `Loop*`, `Stitch*`,
+`Knot*`, `Skein*`, and even **Lattice**, **Filigree**, **Knotwork**, **Curlicue**
+(all checked — all in use; see below). The genre's biggest agnostic brand,
+**Ravelry**, is a *coined* word — which is the usual way to get an ownable,
+craft‑neutral name. So the round/whorl words are the right instinct; a fully
+invented word is the other route if you want one.
+
+---
+
 ## Strong names that were rejected (and why)
 
 So these don't get re‑suggested — each *seems* available but fails the bare
@@ -130,4 +155,7 @@ search:
 | **Crochetier** | It's simply the word for *a person who crochets* (+ an existing brand). |
 | **Picot / Volute / Gyre / Circlet / Ringlet / Umbel / Tessella** | All taken by existing software or companies. |
 | **True Round / Rosette** (+ Designer/Studio) | *TrueRound* is a golf app (`trueround.app`); *Rosette Designer* already exists (a guitar‑rosette design app — direct "…Designer" collision). |
+| **Lattice** | *Lattice — Craft Inventory* app (knit/crochet/quilting, 2026) **and** Lattice HR software. |
+| **Knotwork / Filigree / Curlicue / Bight / Plait** | Each in use (Knotwork LA, `filigree.studio`, Curlicue hair app, Bight Games/Video…) or buried by common‑word noise. |
+| **Graticule / Helicline / Cartouche / Quincunx / Rosace / Rondeau / Inround** | All taken by existing software or companies. |
 | **Stitch\*** (incl. the current *StitchGrid*) | Extremely crowded — see top of file. |
