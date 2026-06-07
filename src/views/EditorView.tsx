@@ -3,10 +3,10 @@ import {
   App, Button, Segmented, Select, Slider, Switch, ColorPicker, Dropdown, Modal, Input, Tooltip, Typography,
 } from 'antd';
 import {
-  ArrowLeftOutlined, UndoOutlined, RedoOutlined, DownloadOutlined, QuestionCircleOutlined,
-  PlusOutlined, ZoomInOutlined, ZoomOutOutlined, ExpandOutlined, MoreOutlined, DeleteOutlined,
-  EditOutlined, RotateLeftOutlined, RotateRightOutlined, AimOutlined,
-} from '@ant-design/icons';
+  BackIcon, UndoIcon, RedoIcon, DownloadIcon, HelpIcon,
+  PlusIcon, ZoomInIcon, ZoomOutIcon, FitIcon, MoreIcon, DeleteIcon,
+  EditIcon, RotateLeftIcon, RotateRightIcon, OriginIcon,
+} from '../icons';
 import { useStore } from '../useStore';
 import { CanvasView } from '../editor/CanvasView';
 import { Glyph } from '../components/Glyph';
@@ -92,12 +92,12 @@ export function EditorView() {
   return (
     <div className="editor">
       <header className="topbar">
-        <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => s.backToProject()}>Project</Button>
+        <Button type="text" icon={<BackIcon />} onClick={() => s.backToProject()}>Project</Button>
         <Input variant="borderless" className="pat-name" value={pat.name} onChange={(e) => s.renamePattern(pat.id, e.target.value)} />
         <span className="badge">Granny square</span>
         <div className="grow" />
-        <Tooltip title="Undo (⌘Z)"><Button type="text" icon={<UndoOutlined />} disabled={!s.undoStack.length} onClick={() => s.undo()} /></Tooltip>
-        <Tooltip title="Redo (⇧⌘Z)"><Button type="text" icon={<RedoOutlined />} disabled={!s.redoStack.length} onClick={() => s.redo()} /></Tooltip>
+        <Tooltip title="Undo (⌘Z)"><Button type="text" icon={<UndoIcon />} disabled={!s.undoStack.length} onClick={() => s.undo()} /></Tooltip>
+        <Tooltip title="Redo (⇧⌘Z)"><Button type="text" icon={<RedoIcon />} disabled={!s.redoStack.length} onClick={() => s.redo()} /></Tooltip>
         <Dropdown trigger={['click']} menu={{
           items: exportItems,
           onClick: ({ key }) => {
@@ -106,9 +106,9 @@ export function EditorView() {
             else { const pr = s.currentProject(); if (pr) printProject(pr); }
           },
         }}>
-          <Button icon={<DownloadOutlined />}>Export</Button>
+          <Button icon={<DownloadIcon />}>Export</Button>
         </Dropdown>
-        <Tooltip title="How it works"><Button type="text" icon={<QuestionCircleOutlined />} onClick={() => setHelp(true)} /></Tooltip>
+        <Tooltip title="How it works"><Button type="text" icon={<HelpIcon />} onClick={() => setHelp(true)} /></Tooltip>
       </header>
 
       <div className="toolbar">
@@ -116,9 +116,9 @@ export function EditorView() {
         <div className="grow" />
         <Button size="small" onClick={() => s.evenRound(pat.activeRound)}>Even out row</Button>
         <div className="tool-view">
-          <Button size="small" type="text" icon={<ZoomOutOutlined />} onClick={() => ctrl.current?.zoomOut()} />
-          <Button size="small" icon={<ExpandOutlined />} onClick={() => ctrl.current?.fit()}>Fit</Button>
-          <Button size="small" type="text" icon={<ZoomInOutlined />} onClick={() => ctrl.current?.zoomIn()} />
+          <Button size="small" type="text" icon={<ZoomOutIcon />} onClick={() => ctrl.current?.zoomOut()} />
+          <Button size="small" icon={<FitIcon />} onClick={() => ctrl.current?.fit()}>Fit</Button>
+          <Button size="small" type="text" icon={<ZoomInIcon />} onClick={() => ctrl.current?.zoomIn()} />
         </div>
       </div>
 
@@ -145,7 +145,7 @@ export function EditorView() {
 
         <aside className="ed-right">
           <div className="rows-panel">
-            <div className="panel-head"><div className="panel-title">Rows</div><Button size="small" icon={<PlusOutlined />} onClick={() => { s.addRound(); ctrl.current?.resetInsert(); }}>Row</Button></div>
+            <div className="panel-head"><div className="panel-title">Rows</div><Button size="small" icon={<PlusIcon />} onClick={() => { s.addRound(); ctrl.current?.resetInsert(); }}>Row</Button></div>
             <div className="rows-list">
               {startRow && (
                 <div className={'row-item start-row' + (onStart ? ' on' : '')}>
@@ -164,15 +164,15 @@ export function EditorView() {
                     </button>
                     <Dropdown trigger={['click']} menu={{
                       items: [
-                        { key: 'rename', icon: <EditOutlined />, label: 'Rename' },
-                        ...(working.length > 1 ? [{ key: 'del', icon: <DeleteOutlined />, label: 'Delete row', danger: true }] : []),
+                        { key: 'rename', icon: <EditIcon />, label: 'Rename' },
+                        ...(working.length > 1 ? [{ key: 'del', icon: <DeleteIcon />, label: 'Delete row', danger: true }] : []),
                       ],
                       onClick: ({ key }) => {
                         if (key === 'rename') setRename({ id: r.id, name: r.name });
                         else modal.confirm({ title: `Delete ${r.name} and its stitches?`, okText: 'Delete', okButtonProps: { danger: true }, onOk: () => { s.removeRound(r.id); ctrl.current?.resetInsert(); } });
                       },
                     }}>
-                      <Button type="text" size="small" icon={<MoreOutlined />} />
+                      <Button type="text" size="small" icon={<MoreIcon />} />
                     </Dropdown>
                   </div>
                 );
@@ -271,10 +271,10 @@ function Inspector({ pat, ctrl }: { pat: import('../core/types').Pattern; ctrl: 
         <Switch size="small" checked={first.mirror} onChange={(v) => s.updateSelection({ mirror: v })} />
       </label>
       <div className="insp-acts">
-        <Tooltip title="Rotate −15°"><Button size="small" icon={<RotateLeftOutlined />} onClick={() => s.rotateSelectionBy(-15)} /></Tooltip>
-        <Tooltip title="Rotate +15°"><Button size="small" icon={<RotateRightOutlined />} onClick={() => s.rotateSelectionBy(15)} /></Tooltip>
-        {items.length === 1 && <Button size="small" icon={<AimOutlined />} onClick={() => { ctrl.current?.setMode('insert'); ctrl.current?.setOrigin(first.id); }}>Set as origin</Button>}
-        <Button size="small" danger icon={<DeleteOutlined />} onClick={() => s.deleteSelection()}>Delete</Button>
+        <Tooltip title="Rotate −15°"><Button size="small" icon={<RotateLeftIcon />} onClick={() => s.rotateSelectionBy(-15)} /></Tooltip>
+        <Tooltip title="Rotate +15°"><Button size="small" icon={<RotateRightIcon />} onClick={() => s.rotateSelectionBy(15)} /></Tooltip>
+        {items.length === 1 && <Button size="small" icon={<OriginIcon />} onClick={() => { ctrl.current?.setMode('insert'); ctrl.current?.setOrigin(first.id); }}>Set as origin</Button>}
+        <Button size="small" danger icon={<DeleteIcon />} onClick={() => s.deleteSelection()}>Delete</Button>
       </div>
     </div>
   );

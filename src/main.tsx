@@ -1,5 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import { ConfigProvider, App as AntApp } from 'antd';
+import { IconoirProvider } from 'iconoir-react';
 import { theme } from './theme';
 import { App } from './App';
 import { store } from './core/store';
@@ -25,7 +26,9 @@ store.subscribe(() => {
 createRoot(document.getElementById('root')!).render(
   <ConfigProvider theme={theme}>
     <AntApp>
-      <App />
+      <IconoirProvider iconProps={{ width: 18, height: 18, strokeWidth: 1.8 }}>
+        <App />
+      </IconoirProvider>
     </AntApp>
   </ConfigProvider>,
 );

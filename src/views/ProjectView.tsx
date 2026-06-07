@@ -3,9 +3,9 @@ import {
   App, Button, Card, Dropdown, Form, Input, Modal, Radio, Select, Empty, Typography,
 } from 'antd';
 import {
-  ArrowLeftOutlined, PlusOutlined, DownloadOutlined, FilePdfOutlined, DeleteOutlined,
-  CopyOutlined, MoreOutlined, EditOutlined,
-} from '@ant-design/icons';
+  BackIcon, PlusIcon, DownloadIcon, PdfIcon, DeleteIcon,
+  CopyIcon, MoreIcon, EditIcon,
+} from '../icons';
 import { useStore } from '../useStore';
 import { Thumb } from '../components/Thumb';
 import { exportProjectFile, printProject } from '../core/files';
@@ -58,11 +58,11 @@ export function ProjectView() {
   return (
     <div className="home">
       <header className="topbar">
-        <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => s.goProjects()}>All projects</Button>
+        <Button type="text" icon={<BackIcon />} onClick={() => s.goProjects()}>All projects</Button>
         <div className="grow" />
-        <Button icon={<DownloadOutlined />} onClick={() => exportProjectFile(prj)}>Export</Button>
-        <Button icon={<FilePdfOutlined />} onClick={() => printProject(prj)}>Compose PDF</Button>
-        <Button danger type="text" icon={<DeleteOutlined />} onClick={() => modal.confirm({
+        <Button icon={<DownloadIcon />} onClick={() => exportProjectFile(prj)}>Export</Button>
+        <Button icon={<PdfIcon />} onClick={() => printProject(prj)}>Compose PDF</Button>
+        <Button danger type="text" icon={<DeleteIcon />} onClick={() => modal.confirm({
           title: `Delete “${prj.name}”?`, content: 'Removes the project and all its patterns.',
           okText: 'Delete', okButtonProps: { danger: true }, onOk: () => s.deleteProject(prj.id),
         })}>Delete</Button>
@@ -73,7 +73,7 @@ export function ProjectView() {
         <Input.TextArea variant="borderless" className="proj-desc" autoSize value={prj.description} placeholder="Add a description…" onChange={(e) => s.updateProject(prj.id, { description: e.target.value })} />
 
         <section className="section">
-          <div className="section-head"><Title level={4}>Patterns</Title><Button type="primary" icon={<PlusOutlined />} onClick={() => setNewPat(true)}>New pattern</Button></div>
+          <div className="section-head"><Title level={4}>Patterns</Title><Button type="primary" icon={<PlusIcon />} onClick={() => setNewPat(true)}>New pattern</Button></div>
           <div className="card-grid">
             {prj.patterns.map((pat: Pattern) => (
               <Card key={pat.id} hoverable className="proj-card" styles={{ body: { padding: 14 } }}
@@ -84,9 +84,9 @@ export function ProjectView() {
                   </div>
                   <Dropdown trigger={['click']} menu={{
                     items: [
-                      { key: 'dup', icon: <CopyOutlined />, label: 'Duplicate' },
+                      { key: 'dup', icon: <CopyIcon />, label: 'Duplicate' },
                       { type: 'divider' },
-                      { key: 'del', icon: <DeleteOutlined />, label: 'Delete', danger: true },
+                      { key: 'del', icon: <DeleteIcon />, label: 'Delete', danger: true },
                     ],
                     onClick: ({ key, domEvent }) => {
                       domEvent.stopPropagation();
@@ -94,12 +94,12 @@ export function ProjectView() {
                       else modal.confirm({ title: `Delete pattern “${pat.name}”?`, okText: 'Delete', okButtonProps: { danger: true }, onOk: () => s.deletePattern(prj.id, pat.id) });
                     },
                   }}>
-                    <Button type="text" size="small" icon={<MoreOutlined />} onClick={(e) => e.stopPropagation()} />
+                    <Button type="text" size="small" icon={<MoreIcon />} onClick={(e) => e.stopPropagation()} />
                   </Dropdown>
                 </div>
               </Card>
             ))}
-            <button className="card-new" onClick={() => setNewPat(true)}><PlusOutlined /><span>New pattern</span></button>
+            <button className="card-new" onClick={() => setNewPat(true)}><PlusIcon /><span>New pattern</span></button>
           </div>
         </section>
 
@@ -109,7 +109,7 @@ export function ProjectView() {
             {(Object.keys(RES_META) as ResourceKind[]).map((kind) => (
               <Card key={kind} size="small" className="res-col"
                 title={RES_META[kind].title}
-                extra={<Button size="small" icon={<PlusOutlined />} onClick={() => openRes(kind, null)}>{RES_META[kind].add}</Button>}>
+                extra={<Button size="small" icon={<PlusIcon />} onClick={() => openRes(kind, null)}>{RES_META[kind].add}</Button>}>
                 <ResourceList project={prj} kind={kind} onEdit={(it) => openRes(kind, it)} onDelete={(id) => s.removeResource(prj.id, kind, id)} />
               </Card>
             ))}
@@ -169,8 +169,8 @@ function ResourceList({ project, kind, onEdit, onDelete }: { project: Project; k
         <div key={it.id} className="res-item">
           <div className="res-text">{resourceLine(kind, it)}</div>
           <div className="res-acts">
-            <Button type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(it)} />
-            <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => onDelete(it.id!)} />
+            <Button type="text" size="small" icon={<EditIcon />} onClick={() => onEdit(it)} />
+            <Button type="text" size="small" danger icon={<DeleteIcon />} onClick={() => onDelete(it.id!)} />
           </div>
         </div>
       ))}
