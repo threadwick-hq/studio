@@ -16,10 +16,10 @@ import type { Project, Pattern, ResourceKind, Yarn, LinkRes, NoteRes, VariationR
 const { Title } = Typography;
 
 const RES_META: Record<ResourceKind, { title: string; add: string; empty: string; Icon: ComponentType }> = {
-  yarns: { title: 'Yarns', add: 'Add yarn', empty: 'Track the yarns you used — brand, weight, colour.', Icon: YarnIcon },
-  links: { title: 'Links & videos', add: 'Add link', empty: 'Tutorial videos and reference links.', Icon: LinkIcon },
-  notes: { title: 'Notes & tips', add: 'Add note', empty: 'Gotchas, gauge, hooks — anything worth remembering.', Icon: NotesIcon },
-  variations: { title: 'Variations', add: 'Add variation', empty: 'Colourways and tweaks of this project.', Icon: VariationIcon },
+  yarns: { title: 'Yarns', add: 'Yarn', empty: 'Track the yarns you used — brand, weight, colour.', Icon: YarnIcon },
+  links: { title: 'Links & videos', add: 'Link', empty: 'Tutorial videos and reference links.', Icon: LinkIcon },
+  notes: { title: 'Notes & tips', add: 'Note', empty: 'Gotchas, gauge, hooks — anything worth remembering.', Icon: NotesIcon },
+  variations: { title: 'Variations', add: 'Variation', empty: 'Colourways and tweaks of this project.', Icon: VariationIcon },
 };
 
 type ResItem = Yarn | LinkRes | NoteRes | VariationRes;
@@ -63,7 +63,7 @@ export function ProjectView() {
         <Button type="text" icon={<BackIcon />} onClick={() => s.goProjects()}>All projects</Button>
         <div className="grow" />
         <Button icon={<DownloadIcon />} onClick={() => exportProjectFile(prj)}>Export</Button>
-        <Button icon={<PdfIcon />} onClick={() => printProject(prj)}>Compose PDF</Button>
+        <Button icon={<PdfIcon />} onClick={() => { void printProject(prj); }}>Printable PDF</Button>
         <Button danger type="text" icon={<DeleteIcon />} onClick={() => modal.confirm({
           title: `Delete “${prj.name}”?`, content: 'Removes the project and all its patterns.',
           okText: 'Delete', okButtonProps: { danger: true }, onOk: () => s.deleteProject(prj.id),

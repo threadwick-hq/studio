@@ -138,6 +138,12 @@ kbd { font-size: 11px; background: var(--bg); border: 1px solid var(--line); bor
 .insp-legend li { display: flex; align-items: center; gap: 8px; }
 .inspector .field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); margin-bottom: 11px; }
 .inspector .field.row { flex-direction: row; align-items: center; justify-content: space-between; }
+
+/* export modal */
+.export-form { display: flex; flex-direction: column; gap: 14px; margin-top: 4px; }
+.export-form .field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
+.export-form .field > span { font-weight: 500; color: var(--ink); }
+.export-form .field.check { flex-direction: row; align-items: center; gap: 9px; color: var(--ink); }
 .insp-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .legend { display: flex; flex-direction: column; gap: 6px; }
 .legend-row { display: flex; align-items: center; gap: 9px; font-size: 13px; }

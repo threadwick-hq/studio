@@ -19,6 +19,7 @@ export {
   RotateCameraLeft as RotateLeftIcon,
   RotateCameraRight as RotateRightIcon,
   Position as OriginIcon,
+  Menu as MenuIcon,
   DropletHalf as YarnIcon,
   Link as LinkIcon,
   Notes as NotesIcon,

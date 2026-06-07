@@ -3,7 +3,7 @@ import {
   App, Button, Segmented, Select, Slider, Switch, ColorPicker, Dropdown, Modal, Input, Tooltip, Typography,
 } from 'antd';
 import {
-  BackIcon, UndoIcon, RedoIcon, DownloadIcon, HelpIcon,
+  BackIcon, UndoIcon, RedoIcon, DownloadIcon, HelpIcon, MenuIcon,
   PlusIcon, ZoomInIcon, ZoomOutIcon, FitIcon, MoreIcon, DeleteIcon,
   EditIcon, RotateLeftIcon, RotateRightIcon, OriginIcon,
 } from '../icons';
@@ -14,7 +14,7 @@ import type { CanvasController, Mode } from '../core/editorCanvas';
 import { STITCH_ORDER, START_ORDER, STITCHES, STITCH_KEYS, isStart, isRealStitch, defaultLen } from '../core/symbols';
 import { chainOrder } from '../core/connectivity';
 import { usedTypes } from '../core/render';
-import { summarizeRound, exportPatternSVG, exportPatternPNG, printProject } from '../core/files';
+import { summarizeRound, exportPatternSVG, exportPatternPNG, printPattern } from '../core/files';
 import { hasStart, isStartRow } from '../core/model';
 import { INK, ORIGIN, SPACE, SELECT } from '../core/colors';
 import type { Stitch, StitchType } from '../core/types';
@@ -33,6 +33,7 @@ export function EditorView() {
   const ctrl = useRef<CanvasController | null>(null);
   const [chrome, setChrome] = useState<Chrome>({ mode: 'select', armed: 'dc', phase: 'base', nextId: null });
   const [help, setHelp] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [rename, setRename] = useState<{ id: string; name: string } | null>(null);
   const { modal } = App.useApp();
 
@@ -86,12 +87,6 @@ export function EditorView() {
   const working = pat.rounds.slice(1);
   const onStart = isStartRow(pat, pat.activeRound);
   const started = hasStart(pat);
-  const exportItems = [
-    { key: 'svg', label: 'SVG image' },
-    { key: 'png', label: 'PNG image' },
-    { key: 'pdf', label: 'PDF document…' },
-  ];
-
   return (
     <div className="editor">
       <header className="topbar">
@@ -101,17 +96,13 @@ export function EditorView() {
         <div className="grow" />
         <Tooltip title="Undo (⌘Z)"><Button type="text" aria-label="Undo" icon={<UndoIcon />} disabled={!s.undoStack.length} onClick={() => s.undo()} /></Tooltip>
         <Tooltip title="Redo (⇧⌘Z)"><Button type="text" aria-label="Redo" icon={<RedoIcon />} disabled={!s.redoStack.length} onClick={() => s.redo()} /></Tooltip>
-        <Dropdown trigger={['click']} menu={{
-          items: exportItems,
-          onClick: ({ key }) => {
-            if (key === 'svg') exportPatternSVG(pat, pat.name);
-            else if (key === 'png') exportPatternPNG(pat, pat.name);
-            else { const pr = s.currentProject(); if (pr) printProject(pr); }
-          },
-        }}>
-          <Button icon={<DownloadIcon />}>Export</Button>
-        </Dropdown>
         <Tooltip title="How it works"><Button type="text" aria-label="How it works" icon={<HelpIcon />} onClick={() => setHelp(true)} /></Tooltip>
+        <Dropdown trigger={['click']} menu={{
+          items: [{ key: 'export', icon: <DownloadIcon />, label: 'Export pattern…' }],
+          onClick: ({ key }) => { if (key === 'export') setExportOpen(true); },
+        }}>
+          <Button type="text" aria-label="Menu" icon={<MenuIcon />} />
+        </Dropdown>
       </header>
 
       <div className="toolbar">
@@ -195,6 +186,7 @@ export function EditorView() {
       </div>
 
       <HelpModal open={help} onClose={() => setHelp(false)} />
+      {exportOpen && <ExportModal pattern={pat} onClose={() => setExportOpen(false)} />}
 
       <Modal title="Rename row" open={!!rename} okText="Save" destroyOnHidden
         onOk={() => { if (rename) s.renameRound(rename.id, rename.name.trim() || 'Row'); setRename(null); }}
@@ -307,6 +299,47 @@ function Legend({ pat }: { pat: import('../core/types').Pattern }) {
         <div key={t} className="legend-row"><Glyph type={t} size={26} /><span>{STITCHES[t].name}{STITCHES[t].abbr ? ` (${STITCHES[t].abbr})` : ''}</span></div>
       ))}
     </div>
+  );
+}
+
+function ExportModal({ pattern, onClose }: { pattern: import('../core/types').Pattern; onClose: () => void }) {
+  const [format, setFormat] = useState<'svg' | 'png' | 'pdf'>('svg');
+  const [title, setTitle] = useState(true);
+  const [legend, setLegend] = useState(true);
+  const [bg, setBg] = useState<'white' | 'transparent'>('white');
+  const [scale, setScale] = useState(3);
+
+  const doExport = () => {
+    if (format === 'svg') exportPatternSVG(pattern, { title, legend, background: bg });
+    else if (format === 'png') exportPatternPNG(pattern, { title, legend, background: bg, scale });
+    else printPattern(pattern, { title, legend });
+    onClose();
+  };
+
+  return (
+    <Modal title="Export pattern" open okText="Export" onOk={doExport} onCancel={onClose} destroyOnHidden>
+      <div className="export-form">
+        <label className="field"><span>Format</span>
+          <Segmented block value={format} onChange={(v) => setFormat(v as 'svg' | 'png' | 'pdf')}
+            options={[{ label: 'SVG', value: 'svg' }, { label: 'PNG', value: 'png' }, { label: 'Printable PDF', value: 'pdf' }]} />
+        </label>
+        <label className="field check"><Switch size="small" checked={title} onChange={setTitle} /> Include title</label>
+        <label className="field check"><Switch size="small" checked={legend} onChange={setLegend} /> Include legend</label>
+        {format !== 'pdf' && (
+          <label className="field"><span>Background</span>
+            <Segmented value={bg} onChange={(v) => setBg(v as 'white' | 'transparent')}
+              options={[{ label: 'White', value: 'white' }, { label: 'Transparent', value: 'transparent' }]} />
+          </label>
+        )}
+        {format === 'png' && (
+          <label className="field"><span>Resolution</span>
+            <Segmented value={scale} onChange={(v) => setScale(v as number)}
+              options={[{ label: '1×', value: 1 }, { label: '2×', value: 2 }, { label: '3×', value: 3 }]} />
+          </label>
+        )}
+        {format === 'pdf' && <p className="muted small">Print-ready — this pattern's chart, legend and written instructions. (For the whole project with QR-coded links, use “Printable PDF” on the project page.)</p>}
+      </div>
+    </Modal>
   );
 }
 
