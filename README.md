@@ -71,25 +71,29 @@ The UI is **React 18 + Ant Design v5** in **strict TypeScript**, built with Vite
 
 ## AI-assisted development
 
-Because the UI is built on **Ant Design**, the repo ships an **Ant Design MCP
-server** in [`.mcp.json`](.mcp.json). Any MCP-aware assistant (Claude Code,
-Cursor, …) that opens this repo can query live antd component docs, props and
-usage while it writes code — so generated UI stays idiomatic to the design
-system.
+Because the UI is built on **Ant Design**, the repo ships Ant Design's
+[**official MCP server**](https://ant.design/docs/react/mcp) in
+[`.mcp.json`](.mcp.json). Any MCP-aware assistant (Claude Code, Cursor, …) that
+opens this repo can query live antd component docs, props, demos, design tokens
+and changelogs while it writes code — so generated UI stays idiomatic to the
+design system. It exposes seven tools (`antd_list`, `antd_info`, `antd_doc`,
+`antd_demo`, `antd_token`, `antd_semantic`, `antd_changelog`) and two prompts
+(`antd-expert`, `antd-page-generator`).
 
 ```jsonc
 {
   "mcpServers": {
-    "ant-design": { "command": "npx", "args": ["-y", "antd-mcp"] }
+    // official @ant-design/cli MCP server (the `antd mcp` command)
+    "antd": { "command": "npx", "args": ["-y", "@ant-design/cli", "mcp"] }
   }
 }
 ```
 
-The pinned server is the community [`antd-mcp`](https://www.npmjs.com/package/antd-mcp)
-package (runs over stdio via `npx`). To use Ant Design's **official** server
-instead, replace the `ant-design` entry with the config from
-[ant.design → MCP](https://ant.design/docs/react/mcp). In Claude Code, enable
-the project server when prompted (or run `claude mcp list`).
+It's the official server from [`@ant-design/cli`](https://www.npmjs.com/package/@ant-design/cli),
+run over stdio. We invoke it with `npx` so no global install is needed; the docs'
+equivalent is `npm install -g @ant-design/cli` then `{ "command": "antd", "args":
+["mcp"] }`. Pin a version with an extra arg (e.g. `"mcp", "--version", "5.20.0"`).
+In Claude Code, enable the project server when prompted (or run `claude mcp list`).
 
 ## Exporting
 
