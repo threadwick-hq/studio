@@ -91,7 +91,7 @@ export function EditorView() {
   const onStart = isStartRow(pat, pat.activeRound);
   const started = hasStart(pat);
   return (
-    <div className="editor">
+    <div className={'editor' + (readOnly ? ' has-banner' : '')}>
       <header className="topbar">
         <Tooltip title="Back to project"><Button type="text" icon={<BackIcon />} onClick={() => s.backToProject()}><span className="back-label">{proj?.name ?? 'Project'}</span></Button></Tooltip>
         <Input variant="borderless" className="pat-name" value={pat.name} readOnly={readOnly} onChange={(e) => s.renamePattern(pat.id, e.target.value)} />
@@ -130,7 +130,7 @@ export function EditorView() {
           action={proj && <Button size="small" type="primary" icon={<EditIcon />} onClick={() => s.createDraft(proj.id)}>Edit as new draft</Button>} />
       )}
 
-      <div className="ed-body">
+      <div className={'ed-body' + (readOnly ? ' readonly' : '')}>
         {!readOnly && (
           <aside className="ed-left">
             <Palette pat={pat} chrome={chrome} ctrl={ctrl} />
