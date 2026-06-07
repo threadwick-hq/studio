@@ -8,16 +8,15 @@ import { fromPolar, norm360 } from './geometry.js';
 import { topOfStitch } from './render.js';
 import { isRealStitch } from './symbols.js';
 
-function mk(round, type, origin, base, basePt, headPt, angle) {
+function mk(round, type, origin, base, basePt, headPt) {
   const dx = headPt.x - basePt.x, dy = headPt.y - basePt.y;
   const len = Math.hypot(dx, dy);
-  const flat = type === 'ch' || type === 'slst';
+  const flat = type === 'slst'; // slip stitch is just a dot at its base
   return {
     id: uid('st'), round, type, origin, base,
-    x: flat ? headPt.x : basePt.x,
-    y: flat ? headPt.y : basePt.y,
-    rot: flat ? (type === 'ch' ? norm360(angle + 90) : 0) : (Math.atan2(dx, -dy) * 180) / Math.PI,
-    len: flat ? null : Math.max(2, len),
+    x: basePt.x, y: basePt.y,
+    rot: flat ? 0 : (Math.atan2(dx, -dy) * 180) / Math.PI,
+    len: (type === 'ch' || flat) ? null : Math.max(2, len),
     color: null, mirror: false,
   };
 }
@@ -26,13 +25,14 @@ export function sampleProject() {
   const prj = newProject('Sunburst granny');
   prj.description = 'A classic two-round granny square — your starter project. Open it to see how every stitch comes out of an origin and is worked into a base.';
   const pat = newPattern('Classic granny square');
+  const r0 = { id: uid('rnd'), name: 'Round 0' };   // the start marker's own row
   const r1 = pat.rounds[0]; r1.name = 'Round 1';
   const r2 = { id: uid('rnd'), name: 'Round 2' };
-  pat.rounds.push(r2);
+  pat.rounds = [r0, r1, r2];
   pat.activeRound = r2.id;
   pat.start = 'mr';
 
-  const ring = { id: uid('st'), round: r1.id, type: 'mr', origin: null, base: null, x: 0, y: 0, rot: 0, len: null, color: null, mirror: false };
+  const ring = { id: uid('st'), round: r0.id, type: 'mr', origin: null, base: null, x: 0, y: 0, rot: 0, len: null, color: null, mirror: false };
   const stitches = [ring];
   const byId = (id) => stitches.find((s) => s.id === id);
   let prev = ring.id;
@@ -45,9 +45,15 @@ export function sampleProject() {
     seq1.push({ type: 'ch', ang: corners[k], R: R1 * 0.96 });
   }
   for (const it of seq1) {
-    const head = fromPolar(it.R, it.ang);
-    const s = mk(r1.id, it.type, prev, { kind: 'stitch', id: ring.id }, { x: 0, y: 0 }, head, it.ang);
-    stitches.push(s); prev = s.id;
+    if (it.type === 'ch') {
+      const oh = topOfStitch(byId(prev));                  // chain flows off the previous dc
+      const s = mk(r1.id, 'ch', prev, { kind: 'stitch', id: prev }, oh, fromPolar(it.R + 16, it.ang));
+      stitches.push(s); prev = s.id;
+    } else {
+      const head = fromPolar(it.R, it.ang);
+      const s = mk(r1.id, it.type, prev, { kind: 'stitch', id: ring.id }, { x: 0, y: 0 }, head);
+      stitches.push(s); prev = s.id;
+    }
   }
 
   // ---- Round 2: corner shells (3 dc, ch, 3 dc) + side 3-dc groups ---------
@@ -71,11 +77,16 @@ export function sampleProject() {
   }
   items2.sort((a, b) => norm360(a.ang) - norm360(b.ang));
   for (const it of items2) {
-    const head = fromPolar(it.R, it.ang);
-    const bp = fromPolar(it.type === 'ch' ? it.R - 12 : Rin, it.ang);
-    const base = nearestBaseRef(head);
-    const s = mk(r2.id, it.type, prev, base, bp, head, it.ang);
-    stitches.push(s); prev = s.id;
+    if (it.type === 'ch') {
+      const oh = topOfStitch(byId(prev));                  // chain flows off the previous dc
+      const s = mk(r2.id, 'ch', prev, { kind: 'stitch', id: prev }, oh, fromPolar(it.R + 14, it.ang));
+      stitches.push(s); prev = s.id;
+    } else {
+      const head = fromPolar(it.R, it.ang);
+      const base = nearestBaseRef(head);
+      const s = mk(r2.id, it.type, prev, base, fromPolar(Rin, it.ang), head);
+      stitches.push(s); prev = s.id;
+    }
   }
 
   pat.stitches = stitches;

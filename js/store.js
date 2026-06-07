@@ -8,10 +8,11 @@
 import { uid, deepClone, nowISO } from './util.js';
 import {
   newProject, newPattern, newRound, normalizeProject,
+  startRoundId, isStartRound,
   PATTERN_TYPES, FILE_FORMAT, FILE_VERSION,
 } from './model.js';
 import { isStart, isRealStitch } from './symbols.js';
-import { topOfStitch } from './render.js';
+import { topOfStitch, buildStitchShapes } from './render.js';
 import { chainOrder } from './connectivity.js';
 
 const SAVE_KEY = 'stitchgridstudio:v2';
@@ -183,6 +184,7 @@ class Store {
     if (!pat) return;
     this._pushHistory(pat);
     fn(pat);
+    autoLayoutChains(pat); // keep auto chains evenly aligned after any edit
     pat.updatedAt = nowISO();
     const prj = this.currentProject(); if (prj) prj.updatedAt = nowISO();
     this._pruneSelection(pat);
@@ -213,23 +215,34 @@ class Store {
   setActiveRound(roundId) {
     const pat = this.currentPattern();
     if (!pat || !pat.rounds.find((r) => r.id === roundId)) return;
+    if (isStartRound(pat, roundId)) return; // Round 0 can't be worked into
     pat.activeRound = roundId; // not history-worthy on its own
     this.emit();
   }
   addRound(name) {
     let id = null;
     this.editTransact((pat) => {
-      const r = newRound(name || 'Round ' + (pat.rounds.length + 1));
+      const startId = startRoundId(pat);
+      const working = pat.rounds.filter((r) => r.id !== startId).length;
+      const r = newRound(name || 'Round ' + (working + 1));
       pat.rounds.push(r);
       pat.activeRound = r.id;
       id = r.id;
     });
     return id;
   }
-  renameRound(roundId, name) { this.editTransact((pat) => { const r = pat.rounds.find((x) => x.id === roundId); if (r) r.name = name; }); }
+  renameRound(roundId, name) {
+    this.editTransact((pat) => {
+      if (isStartRound(pat, roundId)) return; // Round 0 is fixed
+      const r = pat.rounds.find((x) => x.id === roundId);
+      if (r) r.name = name;
+    });
+  }
   removeRound(roundId) {
     this.editTransact((pat) => {
-      if (pat.rounds.length <= 1) return; // always keep one round
+      if (isStartRound(pat, roundId)) return; // can't remove the start row
+      const working = pat.rounds.filter((r) => !isStartRound(pat, r.id)).length;
+      if (working <= 1) return; // always keep one working round
       const removed = new Set(pat.stitches.filter((s) => s.round === roundId).map((s) => s.id));
       pat.rounds = pat.rounds.filter((r) => r.id !== roundId);
       pat.stitches = pat.stitches.filter((s) => s.round !== roundId);
@@ -239,21 +252,29 @@ class Store {
         if (s.base && s.base.kind === 'stitch' && removed.has(s.base.id)) s.base = null;
         if (s.base && s.base.kind === 'space' && (removed.has(s.base.ids[0]) || removed.has(s.base.ids[1]))) s.base = null;
       }
-      if (!pat.rounds.find((r) => r.id === pat.activeRound)) pat.activeRound = pat.rounds[pat.rounds.length - 1].id;
+      if (!pat.rounds.find((r) => r.id === pat.activeRound) || isStartRound(pat, pat.activeRound)) {
+        const firstWorking = pat.rounds.find((r) => !isStartRound(pat, r.id));
+        pat.activeRound = (firstWorking || pat.rounds[pat.rounds.length - 1]).id;
+      }
     });
   }
 
   // ---- editor: start -------------------------------------------------------
+  // Picking a start marker drops it, alone, into a dedicated Round 0 at the
+  // centre. It's never placed by hand, moved, or added to (see editorCanvas).
   setStart(type) {
     if (!isStart(type)) return null;
     let id = null;
     this.editTransact((pat) => {
       pat.start = type;
       let start = pat.stitches.find((s) => isStart(s.type));
-      if (start) start.type = type;
+      if (start) { start.type = type; } // already have Round 0 — just swap the symbol
       else {
-        start = { id: uid('st'), round: pat.rounds[0].id, type, origin: null, base: null, x: 0, y: 0, rot: 0, len: null, color: null, mirror: false };
+        const r0 = newRound('Round 0');
+        pat.rounds.unshift(r0);
+        start = { id: uid('st'), round: r0.id, type, origin: null, base: null, x: 0, y: 0, rot: 0, len: null, color: null, mirror: false };
         pat.stitches.unshift(start);
+        if (isStartRound(pat, pat.activeRound)) pat.activeRound = (pat.rounds[1] || pat.rounds[0]).id;
       }
       id = start.id;
     });
@@ -274,7 +295,7 @@ class Store {
         const next = pat.stitches.find((s) => s.round === roundId && s.origin === originId);
         if (next) next.origin = id; // existing successor now comes out of the new stitch
       }
-      pat.stitches.push({ id, round: roundId, type, origin: originId, base, x, y, rot, len, color, mirror: false });
+      pat.stitches.push({ id, round: roundId, type, origin: originId, base, x, y, rot, len, color, mirror: false, auto: type === 'ch' ? true : undefined });
     });
     this._lastPlacedId = id;
     return id;
@@ -283,8 +304,37 @@ class Store {
   moveSelectionBy(dx, dy) {
     if (!this.selection.size || (!dx && !dy)) return;
     this.editTransact((pat) => {
-      for (const s of pat.stitches) if (this.selection.has(s.id)) { s.x += dx; s.y += dy; }
+      for (const s of pat.stitches) if (this.selection.has(s.id)) {
+        s.x += dx; s.y += dy;
+        if (s.type === 'ch') s.auto = false; // moving a chain by hand opts it out of auto-align
+      }
     });
+  }
+
+  // Toggle auto-alignment on the selected chains (re-enabling snaps them back).
+  setChainAuto(value) {
+    if (!this.selection.size) return;
+    this.editTransact((pat) => {
+      for (const s of pat.stitches) if (this.selection.has(s.id) && s.type === 'ch') s.auto = value;
+    });
+  }
+
+  // ---- live drag (one history entry per gesture) --------------------------
+  // The snapshot is taken lazily on the first frame that actually moves, so a
+  // click that doesn't drag leaves no no-op undo entry.
+  dragBegin() { this._dragSnapped = false; }
+  dragBy(dx, dy) {
+    if (!this.selection.size || (!dx && !dy)) return;
+    const pat = this.currentPattern();
+    if (!pat) return;
+    if (!this._dragSnapped) { this._pushHistory(pat); this._dragSnapped = true; }
+    for (const s of pat.stitches) if (this.selection.has(s.id)) {
+      s.x += dx; s.y += dy;
+      if (s.type === 'ch') s.auto = false; // dragging a chain opts it out of auto-align
+    }
+    autoLayoutChains(pat); // realign auto chains as their neighbours move
+    pat.updatedAt = nowISO();
+    this._touch();
   }
 
   updateSelection(patch) {
@@ -386,6 +436,34 @@ class Store {
       }
       return true;
     } catch { return false; }
+  }
+}
+
+// Evenly align every auto chain along the segment between its nearest non-chain
+// ancestor's head and nearest non-chain child's head. A run of chains fills the
+// gap at the fractions 1/(N+1)…N/(N+1); each oval's centre lands on its slot.
+function autoLayoutChains(pat) {
+  const stitches = pat.stitches;
+  const byId = new Map(stitches.map((s) => [s.id, s]));
+  const childOf = new Map();
+  for (const s of stitches) if (s.origin) childOf.set(s.origin, s); // linear chain => one child each
+  const d0 = -(buildStitchShapes('ch').shapes[0].cy || 0); // oval-centre offset from the anchor
+  for (const s of stitches) {
+    if (s.type !== 'ch' || s.auto === false) continue;
+    let a = byId.get(s.origin), before = 0; const seenA = new Set([s.id]);
+    while (a && a.type === 'ch' && !seenA.has(a.id)) { before++; seenA.add(a.id); a = byId.get(a.origin); }
+    let c = childOf.get(s.id), after = 0; const seenC = new Set([s.id]);
+    while (c && c.type === 'ch' && !seenC.has(c.id)) { after++; seenC.add(c.id); c = childOf.get(c.id); }
+    if (!a || !c || a.type === 'ch' || c.type === 'ch') continue; // need a non-chain neighbour each side
+    const ah = topOfStitch(a), chd = topOfStitch(c);
+    const dx = chd.x - ah.x, dy = chd.y - ah.y;
+    const L = Math.hypot(dx, dy); if (L < 1e-6) continue;
+    const N = before + 1 + after;
+    const t = (before + 1) / (N + 1);
+    const sx = ah.x + dx * t, sy = ah.y + dy * t;  // even slot centre
+    const ux = dx / L, uy = dy / L;
+    s.rot = (Math.atan2(dx, -dy) * 180) / Math.PI; // local up points ancestor -> child
+    s.x = sx - d0 * ux; s.y = sy - d0 * uy;        // back off so the oval centre lands on the slot
   }
 }
 

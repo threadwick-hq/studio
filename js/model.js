@@ -7,6 +7,7 @@
 // saved to localStorage and exported to a file unchanged.
 
 import { uid, nowISO, deepClone } from './util.js';
+import { isStart } from './symbols.js';
 
 export const FILE_FORMAT = 'stitchgrid-studio';
 export const FILE_VERSION = 2;
@@ -69,10 +70,35 @@ export function normalizePattern(p = {}) {
   pat.activeRound = roundIds.has(p.activeRound) ? p.activeRound : pat.rounds[pat.rounds.length - 1].id;
   // drop stitches whose round vanished
   pat.stitches = pat.stitches.filter((s) => roundIds.has(s.round));
+  ensureStartRow(pat); // the start marker always lives alone in its own Round 0
   if (p.view) pat.view = { scale: +p.view.scale || 1.4, panX: +p.view.panX || 0, panY: +p.view.panY || 0 };
   pat.createdAt = p.createdAt || pat.createdAt;
   pat.updatedAt = p.updatedAt || pat.updatedAt;
   return pat;
+}
+
+// The id of the dedicated start row (the round that holds the start marker), or
+// null if no start has been chosen yet.
+export function startRoundId(pat) {
+  const s = pat.stitches.find((x) => isStart(x.type));
+  return s ? s.round : null;
+}
+export function isStartRound(pat, roundId) {
+  return roundId != null && roundId === startRoundId(pat);
+}
+
+// Guarantee the start marker (if any) sits alone in a "Round 0" at the front.
+// Migrates older data where the marker shared Round 1 with worked stitches.
+export function ensureStartRow(pat) {
+  const start = pat.stitches.find((s) => isStart(s.type));
+  if (!start) return;
+  const inSameRound = pat.stitches.filter((s) => s.round === start.round);
+  const alreadyDedicated = inSameRound.length === 1 && pat.rounds[0] && pat.rounds[0].id === start.round;
+  if (alreadyDedicated) { pat.rounds[0].name = 'Round 0'; return; }
+  const r0 = { id: uid('rnd'), name: 'Round 0' };
+  pat.rounds.unshift(r0);
+  start.round = r0.id;
+  if (isStartRound(pat, pat.activeRound)) pat.activeRound = (pat.rounds[1] || pat.rounds[0]).id;
 }
 
 function normalizeStitch(s) {
@@ -92,6 +118,9 @@ function normalizeStitch(s) {
     len: s.len == null ? null : +s.len,
     color: s.color ?? null,
     mirror: !!s.mirror,
+    // chains auto-align between their nearest non-chain neighbours unless the
+    // user has moved them by hand (then auto is off until re-enabled).
+    auto: s.type === 'ch' ? s.auto !== false : undefined,
   };
 }
 

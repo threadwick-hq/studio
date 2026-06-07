@@ -8,7 +8,7 @@ import {
   chainOrder, spacesForRound, pickBase, successorInRound, chainFrom,
   defaultOriginId, basePoint,
 } from '../js/connectivity.js';
-import { newProject, newPattern, normalizeProject, projectToFile, projectFromFile } from '../js/model.js';
+import { newProject, newPattern, normalizeProject, projectToFile, projectFromFile, startRoundId } from '../js/model.js';
 import { store } from '../js/store.js';
 import { summarizeRound } from '../js/files.js';
 import { sampleProject } from '../js/sample.js';
@@ -52,6 +52,11 @@ test('topOfStitch is above the base for an upright dc', () => {
 test('topOfStitch rotates with the stitch', () => {
   const head = topOfStitch({ type: 'dc', x: 0, y: 0, rot: 90, len: 20 });
   assert.ok(near(head.x, 20, 1e-6) && near(head.y, 0, 1e-6));
+});
+test('chain head is the far end, buffered off the anchor', () => {
+  const head = topOfStitch({ type: 'ch', x: 0, y: 0, rot: 0, len: null });
+  assert.ok(near(head.x, 0, 1e-9));
+  assert.ok(head.y < -10, 'head lies along local up, past the buffer + oval');
 });
 test('contentBounds covers placed stitches', () => {
   const b = contentBounds([{ type: 'dc', x: 0, y: 0, rot: 0, len: 30 }]);
@@ -131,22 +136,22 @@ test('store: create, start, chain, splice, repair, undo/redo', () => {
   const patId = store.createPattern(pid, 'Sq');
   store.openPattern(pid, patId);
   const pat = () => store.currentPattern();
-  const round = pat().rounds[0].id;
 
   const ringId = store.setStart('mr');
   assert.equal(pat().stitches.length, 1);
+  const round = pat().activeRound; // working row; the ring lives alone in Round 0
 
-  // chain 3 dc off the ring
+  // chain 3 dc off the ring (they go in the active working row, not Round 0)
   const a = store.placeStitch({ type: 'dc', base: { kind: 'stitch', id: ringId }, x: 0, y: 0, rot: 0, len: 30, originId: ringId });
   const b = store.placeStitch({ type: 'dc', base: { kind: 'stitch', id: ringId }, x: 0, y: 0, rot: 0, len: 30, originId: a });
   const c = store.placeStitch({ type: 'dc', base: { kind: 'stitch', id: ringId }, x: 0, y: 0, rot: 0, len: 30, originId: b });
-  assert.deepEqual(chainOrder(pat().stitches, round).map((s) => s.id), [ringId, a, b, c]);
+  assert.deepEqual(chainOrder(pat().stitches, round).map((s) => s.id), [a, b, c]);
 
-  // insert X between ring and a: a should now come out of X
+  // insert X between ring and a (a comes out of the ring): a should now come out of X
   const x = store.placeStitch({ type: 'dc', base: { kind: 'stitch', id: ringId }, x: 0, y: 0, rot: 0, len: 30, originId: ringId });
   assert.equal(pat().stitches.find((s) => s.id === a).origin, x, 'splice re-points the next stitch');
   assert.equal(pat().stitches.find((s) => s.id === x).origin, ringId);
-  assert.deepEqual(chainOrder(pat().stitches, round).map((s) => s.id), [ringId, x, a, b, c]);
+  assert.deepEqual(chainOrder(pat().stitches, round).map((s) => s.id), [x, a, b, c]);
 
   // delete a -> b should reroute to x's-successor's origin (a.origin == x)
   store.setSelection([a]);
@@ -159,6 +164,54 @@ test('store: create, start, chain, splice, repair, undo/redo', () => {
   assert.equal(pat().stitches.length, n + 1);
   store.redo();
   assert.equal(pat().stitches.length, n);
+});
+test('store: start marker lives alone in Round 0', () => {
+  const pid = store.createProject('Z');
+  const patId = store.createPattern(pid, 'Sq');
+  store.openPattern(pid, patId);
+  const pat = () => store.currentPattern();
+  const before = pat().rounds.length;             // 1 working row
+  store.setStart('mr');
+  assert.equal(pat().rounds.length, before + 1, 'a Round 0 was prepended');
+  assert.equal(startRoundId(pat()), pat().rounds[0].id, 'ring is in Round 0');
+  assert.notEqual(pat().activeRound, pat().rounds[0].id, 'active row is a working row');
+  store.setActiveRound(pat().rounds[0].id);
+  assert.notEqual(pat().activeRound, pat().rounds[0].id, 'setActiveRound rejects Round 0');
+  assert.equal(pat().stitches.filter((s) => s.round === pat().rounds[0].id).length, 1, 'only the start sits in Round 0');
+});
+test('normalizeProject migrates a start that shared a working row', () => {
+  const p = normalizeProject({ name: 'M', patterns: [{ type: 'granny', rounds: [{ id: 'r1', name: 'Round 1' }], activeRound: 'r1',
+    stitches: [{ id: 'ring', type: 'mr', round: 'r1', x: 0, y: 0 }, { id: 'd', type: 'dc', round: 'r1', origin: 'ring', x: 0, y: 0 }] }] });
+  const pat = p.patterns[0];
+  assert.equal(pat.rounds.length, 2, 'a Round 0 was split out');
+  const ring = pat.stitches.find((s) => s.type === 'mr');
+  assert.equal(ring.round, pat.rounds[0].id, 'ring moved to Round 0');
+  assert.equal(pat.stitches.filter((s) => s.round === pat.rounds[0].id).length, 1, 'Round 0 holds only the start');
+});
+test('store: chains auto-align evenly between non-chain neighbours', () => {
+  const pid = store.createProject('CH');
+  const patId = store.createPattern(pid, 'Sq');
+  store.openPattern(pid, patId);
+  const pat = () => store.currentPattern();
+  const ring = store.setStart('mr');
+  const round = pat().activeRound;
+  const A = store.placeStitch({ type: 'dc', base: { kind: 'stitch', id: ring }, x: -40, y: 0, rot: 0, len: 30, originId: ring }); // head (-40,-30)
+  let o = A; const chs = [];
+  for (let i = 0; i < 3; i++) { o = store.placeStitch({ type: 'ch', base: { kind: 'stitch', id: o }, x: 0, y: 0, rot: 0, len: null, originId: o }); chs.push(o); }
+  store.placeStitch({ type: 'dc', base: { kind: 'stitch', id: ring }, x: 40, y: 0, rot: 0, len: 30, originId: o }); // B head (40,-30)
+  const order = chainOrder(pat().stitches, round).filter((s) => s.type === 'ch');
+  assert.equal(order.length, 3);
+  assert.ok(order.every((s) => near(s.y, -30, 0.01)), 'chains land on the segment line');
+  assert.ok(near(order[1].x - order[0].x, 20, 0.01) && near(order[2].x - order[1].x, 20, 0.01), 'evenly spaced');
+  // moving a chain by hand opts it out; re-enabling snaps it back
+  store.setSelection([order[1].id]);
+  store.moveSelectionBy(0, -25);
+  const mid = () => pat().stitches.find((s) => s.id === order[1].id);
+  assert.equal(mid().auto, false, 'manual move disables auto');
+  assert.ok(mid().y < -40, 'manually-moved chain stays put');
+  store.setSelection([order[1].id]);
+  store.setChainAuto(true);
+  assert.ok(near(mid().y, -30, 0.01), 're-enabling auto snaps it back');
 });
 test('store: pattern type guard + resources', () => {
   const pid = store.createProject('R');

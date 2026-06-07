@@ -128,15 +128,24 @@ kbd { font-family: var(--font); font-size: 11px; background: var(--bg); border: 
 .ed-toolbar { display: flex; align-items: center; gap: 16px; padding: 8px 18px; background: var(--bg-2); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .tgroup { display: flex; align-items: center; gap: 7px; }
 .tlabel { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
-.rowchips { display: flex; gap: 4px; }
-.rowchip { font-size: 12px; border: 1px solid var(--line); background: var(--panel); border-radius: 20px; padding: 4px 11px; cursor: pointer; }
-.rowchip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 
 .ed-body { display: grid; grid-template-columns: 220px 1fr 280px; min-height: 0; }
-.ed-left, .ed-right { background: var(--bg-2); overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 16px; }
-.ed-left { border-right: 1px solid var(--line); }
-.ed-right { border-left: 1px solid var(--line); }
+.ed-left { background: var(--bg-2); overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 16px; border-right: 1px solid var(--line); }
+/* right sidebar: a glued Rows panel on top, the rest scrolls beneath it */
+.ed-right { background: var(--bg-2); border-left: 1px solid var(--line); display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; }
+.rows-panel { padding: 14px; border-bottom: 1px solid var(--line); }
+.rows-panel .rounds { max-height: 38vh; overflow-y: auto; }
+.ed-right-scroll { overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
+.panel-head h3 { margin: 0; }
 .panel h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 9px; }
+
+/* export dropdown */
+.menu-wrap { position: relative; display: inline-block; }
+.menu { position: absolute; right: 0; top: calc(100% + 6px); background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-s); box-shadow: var(--shadow); padding: 5px; min-width: 168px; z-index: 50; display: flex; flex-direction: column; gap: 2px; }
+.menu[hidden] { display: none; }
+.menu button { text-align: left; background: none; border: none; padding: 8px 10px; border-radius: 7px; font: inherit; font-size: 13px; cursor: pointer; color: var(--ink); }
+.menu button:hover { background: var(--bg); }
 
 .chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
 .chip { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 4px 5px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-s); cursor: pointer; position: relative; }
@@ -174,6 +183,9 @@ kbd { font-family: var(--font); font-size: 11px; background: var(--bg); border: 
 .round-row.on { background: var(--accent-soft); }
 .round-pick { flex: 1; display: flex; flex-direction: column; align-items: flex-start; text-align: left; background: transparent; border: none; border-radius: 7px; padding: 6px 8px; cursor: pointer; min-width: 0; }
 .round-pick:hover { background: rgba(40,30,20,.04); }
+.round-row.start-row { opacity: .8; }
+.round-pick.static { cursor: default; }
+.round-pick.static:hover { background: transparent; }
 .round-pick b { font-size: 13px; }
 .round-pick small { color: var(--muted); font-size: 11px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .round-acts { display: flex; gap: 2px; padding-right: 4px; }
@@ -206,8 +218,8 @@ kbd { font-family: var(--font); font-size: 11px; background: var(--bg); border: 
 .type-opt.disabled { opacity: .5; cursor: default; }
 
 /* scrollbars (subtle) */
-.ed-left::-webkit-scrollbar, .ed-right::-webkit-scrollbar, .modal::-webkit-scrollbar, .view::-webkit-scrollbar { width: 9px; }
-.ed-left::-webkit-scrollbar-thumb, .ed-right::-webkit-scrollbar-thumb, .modal::-webkit-scrollbar-thumb, .view::-webkit-scrollbar-thumb { background: #ddd5c6; border-radius: 6px; }
+.ed-left::-webkit-scrollbar, .ed-right-scroll::-webkit-scrollbar, .modal::-webkit-scrollbar, .view::-webkit-scrollbar { width: 9px; }
+.ed-left::-webkit-scrollbar-thumb, .ed-right-scroll::-webkit-scrollbar-thumb, .modal::-webkit-scrollbar-thumb, .view::-webkit-scrollbar-thumb { background: #ddd5c6; border-radius: 6px; }
 
 /* ---- responsive --------------------------------------------------------- */
 @media (max-width: 900px) {

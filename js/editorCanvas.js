@@ -19,6 +19,7 @@ import {
   pickBase, basePoint, nearestStitch, spacesForRound, successorInRound,
   chainFrom, defaultOriginId,
 } from './connectivity.js';
+import { isStart } from './symbols.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const GHOST = '#2f7bff';
@@ -90,14 +91,21 @@ export function initCanvas(store, svg, opts = {}) {
 
   // ---- chart rendering -----------------------------------------------------
   function styleMap() {
-    // per-stitch visual overrides for insert mode
+    // per-stitch visual overrides. The active row is the focus: stitches in
+    // every other row fade back so the row you're working on stands out.
     const m = new Map();
+    const active = activeRound();
+    const sel = store.selection;
+    for (const s of stitches()) {
+      if (s.round !== active && !sel.has(s.id)) m.set(s.id, { opacity: 0.28 });
+    }
     if (mode !== 'insert') return m;
+    // origin (where the next stitch comes from) — light blue, kept fully visible
     if (originId && store.byIdMap().has(originId)) m.set(originId, { color: ORIGIN });
     const nx = nextStitch();
     if (nx) {
       // grey everything from the next stitch onward; tint the next stitch purple
-      for (const s of chainFrom(stitches(), nx.id, activeRound())) {
+      for (const s of chainFrom(stitches(), nx.id, active)) {
         const cur = m.get(s.id) || {};
         m.set(s.id, { ...cur, opacity: 0.32 });
       }
@@ -175,6 +183,15 @@ export function initCanvas(store, svg, opts = {}) {
     lastU = u;
     if (mode !== 'insert' || drag || marquee || panning) { clearCursor(); return; }
     const og = originGlyph();
+    if (armed === 'ch') {
+      // chain ghost: flows off the origin head toward the cursor
+      const o = store.byIdMap().get(originId);
+      if (!o) { cursorLayer.innerHTML = ''; return; }
+      const oh = topOfStitch(o);
+      const rot = (Math.atan2(u.x - oh.x, -(u.y - oh.y)) * 180) / Math.PI;
+      cursorLayer.innerHTML = og + ghostStitch(oh, null, rot);
+      return;
+    }
     if (phase === 'base') {
       const base = pickBase(stitches(), u.x, u.y);
       let out = og + spaceDots(base);
@@ -203,11 +220,24 @@ export function initCanvas(store, svg, opts = {}) {
   }
 
   function insertDown(e, u) {
-    // alt / cmd click re-anchors the origin (insert mid-round)
+    // alt / cmd click re-anchors the origin (the new stitch comes out of it)
     if (e.altKey || e.metaKey) {
       const hit = e.target.closest('[data-id]');
       const id = hit ? hit.getAttribute('data-id') : (nearestStitch(stitches(), u.x, u.y, 60) || {}).id;
       if (id) { setOrigin(id); return; }
+    }
+    // Chains are special: they flow OUT of the origin in a single click. The
+    // base (right point) buffers off the origin's head; the head (left point)
+    // points at the cursor, so a string of chains lies between the stitches.
+    if (armed === 'ch') {
+      const o = store.byIdMap().get(originId);
+      if (!o) return; // a chain needs something to come out of
+      const oh = topOfStitch(o);
+      const rot = (Math.atan2(u.x - oh.x, -(u.y - oh.y)) * 180) / Math.PI;
+      const newId = store.placeStitch({ type: 'ch', base: { kind: 'stitch', id: originId }, x: oh.x, y: oh.y, rot, len: null, originId });
+      originId = newId; phase = 'base'; pendingBase = null;
+      onChange(); drawCursor(u);
+      return;
     }
     if (phase === 'base') {
       const base = pickBase(stitches(), u.x, u.y);
@@ -229,6 +259,8 @@ export function initCanvas(store, svg, opts = {}) {
     const hit = e.target.closest('[data-id]');
     if (hit) {
       const id = hit.getAttribute('data-id');
+      const st = store.byIdMap().get(id);
+      if (st && isStart(st.type)) return; // the start marker can't be selected or moved
       if (e.shiftKey) store.toggleSelection(id, true);
       else if (!store.selection.has(id)) store.setSelection([id]);
       const lead = store.byIdMap().get(id);
@@ -258,7 +290,7 @@ export function initCanvas(store, svg, opts = {}) {
       const w = Math.abs(u.x - marquee.startU.x), h = Math.abs(u.y - marquee.startU.y);
       cursorLayer.innerHTML = `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="${GHOST}" fill-opacity="0.08" stroke="${GHOST}" stroke-width="1.2" stroke-dasharray="4 3"/>`;
       const ids = new Set(marquee.base);
-      for (const st of stitches()) if (st.x >= x0 && st.x <= x0 + w && st.y >= y0 && st.y <= y0 + h) ids.add(st.id);
+      for (const st of stitches()) if (!isStart(st.type) && st.x >= x0 && st.x <= x0 + w && st.y >= y0 && st.y <= y0 + h) ids.add(st.id);
       store.setSelection([...ids]);
       return;
     }
@@ -266,10 +298,11 @@ export function initCanvas(store, svg, opts = {}) {
       if (!drag.moved) {
         if (Math.hypot(u.x - drag.startU.x, u.y - drag.startU.y) * view.scale < 3) return;
         drag.moved = true;
+        store.dragBegin();
       }
       const tx = u.x - drag.ox, ty = u.y - drag.oy;
       const lead = store.byIdMap().get(drag.leadId);
-      if (lead) store.moveSelectionBy(tx - lead.x, ty - lead.y);
+      if (lead) store.dragBy(tx - lead.x, ty - lead.y);
       return;
     }
     drawCursor(u);

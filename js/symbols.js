@@ -34,8 +34,15 @@ export function postShapes(height, slashes = 0, { topBar = true } = {}) {
 export const STITCHES = {
   ch: {
     name: 'Chain', abbr: 'ch', kind: 'stitch',
-    // A small open oval (the "head" is its far point). Long axis along local X.
-    build: () => ({ shapes: [{ k: 'ellipse', cx: 0, cy: 0, rx: 9.5, ry: 4.6 }], height: 0, head: { x: 9.5, y: 0 } }),
+    // An open oval that lies ALONG the flow between stitches. The anchor (0,0)
+    // is the connection point (it sits on the origin's head); a buffer leaves a
+    // gap so the oval doesn't overlay the origin. The near end of the oval is
+    // the BASE (right point), the far end is the HEAD (left point), so chaining
+    // several strings ovals out between the surrounding stitches.
+    build: () => {
+      const B = 6, ry = 8.5, rx = 4.6; // buffer, half-length (long axis = local Y), half-width
+      return { shapes: [{ k: 'ellipse', cx: 0, cy: -(B + ry), rx, ry }], height: B + 2 * ry, head: { x: 0, y: -(B + 2 * ry) } };
+    },
   },
   slst: {
     name: 'Slip stitch', abbr: 'sl st', kind: 'stitch',
