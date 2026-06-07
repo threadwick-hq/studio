@@ -1,13 +1,13 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// The app is published to GitHub Pages from /docs (project page served under a
-// subpath), so use a relative base and emit the build into docs/.
+// Published to GitHub Pages via Actions (the workflow uploads dist/). A relative
+// base keeps assets working under the project-page subpath (/stitchgrid/).
 export default defineConfig({
   plugins: [react()],
   base: './',
   build: {
-    outDir: 'docs',
+    outDir: 'dist',
     emptyOutDir: true,
     sourcemap: false,
   },
