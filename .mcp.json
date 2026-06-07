@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "ant-design": {
+    "antd": {
       "command": "npx",
-      "args": ["-y", "antd-mcp"]
+      "args": ["-y", "@ant-design/cli", "mcp"]
     }
   }
 }
