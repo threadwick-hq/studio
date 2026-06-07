@@ -173,7 +173,8 @@ function writeAndPrint(win: Window, html: string): void {
 export function printPattern(pattern: Pattern, opts: { title?: boolean; legend?: boolean; instructions?: boolean } = {}): void {
   const win = openPrintWindow();
   if (!win) return;
-  writeAndPrint(win, printDoc(pattern.name, `<h1>${escapeXML(pattern.name)}</h1>${patternSection(pattern, { ...opts, title: false })}`));
+  const heading = opts.title === false ? '' : `<h1>${escapeXML(pattern.name)}</h1>`;
+  writeAndPrint(win, printDoc(pattern.name, `${heading}${patternSection(pattern, { ...opts, title: false })}`));
 }
 
 async function qrSvg(text: string): Promise<string> {

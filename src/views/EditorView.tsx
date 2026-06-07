@@ -186,7 +186,7 @@ export function EditorView() {
       </div>
 
       <HelpModal open={help} onClose={() => setHelp(false)} />
-      <ExportModal pattern={pat} open={exportOpen} onClose={() => setExportOpen(false)} />
+      {exportOpen && <ExportModal pattern={pat} onClose={() => setExportOpen(false)} />}
 
       <Modal title="Rename row" open={!!rename} okText="Save" destroyOnHidden
         onOk={() => { if (rename) s.renameRound(rename.id, rename.name.trim() || 'Row'); setRename(null); }}
@@ -302,7 +302,7 @@ function Legend({ pat }: { pat: import('../core/types').Pattern }) {
   );
 }
 
-function ExportModal({ pattern, open, onClose }: { pattern: import('../core/types').Pattern; open: boolean; onClose: () => void }) {
+function ExportModal({ pattern, onClose }: { pattern: import('../core/types').Pattern; onClose: () => void }) {
   const [format, setFormat] = useState<'svg' | 'png' | 'pdf'>('svg');
   const [title, setTitle] = useState(true);
   const [legend, setLegend] = useState(true);
@@ -317,7 +317,7 @@ function ExportModal({ pattern, open, onClose }: { pattern: import('../core/type
   };
 
   return (
-    <Modal title="Export pattern" open={open} okText="Export" onOk={doExport} onCancel={onClose} destroyOnHidden>
+    <Modal title="Export pattern" open okText="Export" onOk={doExport} onCancel={onClose} destroyOnHidden>
       <div className="export-form">
         <label className="field"><span>Format</span>
           <Segmented block value={format} onChange={(v) => setFormat(v as 'svg' | 'png' | 'pdf')}
@@ -337,7 +337,7 @@ function ExportModal({ pattern, open, onClose }: { pattern: import('../core/type
               options={[{ label: '1×', value: 1 }, { label: '2×', value: 2 }, { label: '3×', value: 3 }]} />
           </label>
         )}
-        {format === 'pdf' && <p className="muted small">Opens a print dialog — chart, legend and written instructions, tailored for paper.</p>}
+        {format === 'pdf' && <p className="muted small">Print-ready — this pattern's chart, legend and written instructions. (For the whole project with QR-coded links, use “Printable PDF” on the project page.)</p>}
       </div>
     </Modal>
   );
