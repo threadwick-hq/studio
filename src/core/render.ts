@@ -1,19 +1,20 @@
-// render.js — the one and only renderer: stitch descriptors -> SVG markup.
-//
-// There is intentionally no DOM here. The live editor injects the inner markup
-// via innerHTML (and reads back data-id for hit-testing); SVG/PNG/print export
-// reuse the exact same output. One renderer => the editor is a true WYSIWYG
-// preview of what gets exported.
+// The one and only renderer: stitch descriptors -> SVG markup strings. No DOM:
+// the editor injects markup via innerHTML and SVG/PNG/print export reuse the
+// exact same output, so the editor is a true WYSIWYG preview.
 
-import { STITCHES } from './symbols.js';
-import { rotatePoint } from './geometry.js';
-import { round, escapeXML } from './util.js';
+import { STITCHES } from './symbols';
+import { rotatePoint } from './geometry';
+import { round, escapeXML } from './util';
+import type { Shape, Built, Point, StitchType, Stitch, Pattern } from './types';
 
 export const INK = '#21201c';
-const SW = 2.4; // stroke width in user units (scales with the view)
+const SW = 2.4;
 
-// ---- shape -> markup -------------------------------------------------------
-function shapeToSVG(s, color, sw = SW) {
+type Placeable = { type: StitchType; x: number; y: number; rot: number; len: number | null; mirror?: boolean; color?: string | null };
+
+interface Box { minX: number; minY: number; maxX: number; maxY: number; }
+
+function shapeToSVG(s: Shape, color: string, sw = SW): string {
   const stroke = `stroke="${color}" stroke-width="${sw}" stroke-linecap="round" fill="none"`;
   switch (s.k) {
     case 'line': return `<line x1="${round(s.x1)}" y1="${round(s.y1)}" x2="${round(s.x2)}" y2="${round(s.y2)}" ${stroke}/>`;
@@ -26,29 +27,27 @@ function shapeToSVG(s, color, sw = SW) {
   }
 }
 
-export function shapesMarkup(shapes, color = INK, sw = SW) {
+export function shapesMarkup(shapes: Shape[], color = INK, sw = SW): string {
   return shapes.map((s) => shapeToSVG(s, color, sw)).join('');
 }
 
-// ---- resolving a stitch type to primitives --------------------------------
-export function buildStitchShapes(type, len) {
+export function buildStitchShapes(type: StitchType, len?: number | null): Built {
   const def = STITCHES[type];
-  if (def) return def.build(len);
-  return STITCHES.dc.build(len); // unknown -> fall back to a dc
+  return def ? def.build(len ?? undefined) : STITCHES.dc.build(len ?? undefined);
 }
 
-// A stitch's HEAD (top of the marker) in world space. Its BASE is its anchor.
-export function topOfStitch(st) {
+// A stitch's HEAD (top of the marker) in world space.
+export function topOfStitch(st: Placeable): Point {
   const built = buildStitchShapes(st.type, st.len);
-  const local = built.head || { x: 0, y: -(built.height || 0) };
+  const local = built.head ?? { x: 0, y: -(built.height || 0) };
   const sx = st.mirror ? -1 : 1;
   const p = rotatePoint(local.x * sx, local.y, st.rot || 0);
   return { x: st.x + p.x, y: st.y + p.y };
 }
 
-// ---- a single placed stitch ----------------------------------------------
-// opts: { interactive, color, opacity, klass }
-export function stitchToSVG(st, opts = {}) {
+export interface StitchSVGOpts { interactive?: boolean; color?: string; opacity?: number; klass?: string; }
+
+export function stitchToSVG(st: Stitch, opts: StitchSVGOpts = {}): string {
   const { shapes, height } = buildStitchShapes(st.type, st.len);
   const color = opts.color || st.color || INK;
   const inner = shapesMarkup(shapes, color);
@@ -56,8 +55,6 @@ export function stitchToSVG(st, opts = {}) {
   const tf = `translate(${round(st.x)} ${round(st.y)}) rotate(${round(st.rot || 0)})${mirror}`;
   const op = opts.opacity != null ? ` opacity="${opts.opacity}"` : '';
   if (!opts.interactive) return `<g transform="${tf}"${op}>${inner}</g>`;
-  // Invisible hit target: a capsule along tall posts so dense rings don't steal
-  // each other's clicks; a disc for low symbols (dots, ovals, rings).
   const hit = height > 4
     ? `<rect class="hit" x="-9" y="${round(-height - 7)}" width="18" height="${round(height + 14)}" rx="9" fill="transparent" pointer-events="all"/>`
     : `<circle class="hit" cx="0" cy="0" r="13" fill="transparent" pointer-events="all"/>`;
@@ -65,23 +62,23 @@ export function stitchToSVG(st, opts = {}) {
   return `<g data-id="${st.id}" class="${cls}" transform="${tf}"${op}>${hit}${inner}</g>`;
 }
 
-// ---- glyphs (palette + legend) -------------------------------------------
-function expandBox(b, x, y) {
+// ---- bounds & glyphs ------------------------------------------------------
+function expandBox(b: Box, x: number, y: number): void {
   if (x < b.minX) b.minX = x; if (y < b.minY) b.minY = y;
   if (x > b.maxX) b.maxX = x; if (y > b.maxY) b.maxY = y;
 }
 
-function shapesBBox(shapes) {
-  const b = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+function shapesBBox(shapes: Shape[]): Box {
+  const b: Box = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
   for (const s of shapes) {
     switch (s.k) {
       case 'line': expandBox(b, s.x1, s.y1); expandBox(b, s.x2, s.y2); break;
       case 'ellipse': expandBox(b, s.cx - s.rx, s.cy - s.ry); expandBox(b, s.cx + s.rx, s.cy + s.ry); break;
       case 'circle': case 'dot': expandBox(b, s.cx - s.r, s.cy - s.r); expandBox(b, s.cx + s.r, s.cy + s.r); break;
-      case 'path': { const n = (s.d.match(/-?\d*\.?\d+/g) || []).map(Number); for (let i = 0; i + 1 < n.length; i += 2) expandBox(b, n[i], n[i + 1]); break; }
+      case 'path': { const n = (s.d.match(/-?\d*\.?\d+/g) || []).map(Number); for (let i = 0; i + 1 < n.length; i += 2) expandBox(b, n[i]!, n[i + 1]!); break; }
       case 'group': {
         const cb = shapesBBox(s.shapes);
-        if (cb.minX <= cb.maxX) for (const [cx, cy] of [[cb.minX, cb.minY], [cb.maxX, cb.minY], [cb.maxX, cb.maxY], [cb.minX, cb.maxY]]) {
+        if (cb.minX <= cb.maxX) for (const [cx, cy] of [[cb.minX, cb.minY], [cb.maxX, cb.minY], [cb.maxX, cb.maxY], [cb.minX, cb.maxY]] as const) {
           const p = rotatePoint(cx, cy, s.rot || 0); expandBox(b, p.x, p.y);
         }
         break;
@@ -91,7 +88,7 @@ function shapesBBox(shapes) {
   return b;
 }
 
-function glyphViewBox(shapes, height) {
+function glyphViewBox(shapes: Shape[], height: number): string {
   let b = shapesBBox(shapes);
   if (b.minX > b.maxX) b = { minX: -10, minY: -Math.max(height, 12), maxX: 10, maxY: 6 };
   const cx = (b.minX + b.maxX) / 2, cy = (b.minY + b.maxY) / 2;
@@ -99,26 +96,25 @@ function glyphViewBox(shapes, height) {
   return `${round(cx - size / 2)} ${round(cy - size / 2)} ${round(size)} ${round(size)}`;
 }
 
-export function glyphSVG(type, px = 40, color = INK) {
+export function glyphSVG(type: StitchType, px = 40, color = INK): string {
   const { shapes, height } = buildStitchShapes(type);
   return `<svg class="glyph" width="${px}" height="${px}" viewBox="${glyphViewBox(shapes, height)}" xmlns="http://www.w3.org/2000/svg">${shapesMarkup(shapes, color)}</svg>`;
 }
 
-// ---- world bounds ---------------------------------------------------------
-function stitchExtent(st) {
+function stitchExtent(st: Placeable): Box {
   const { shapes, height } = buildStitchShapes(st.type, st.len);
   let lb = shapesBBox(shapes);
   if (lb.minX > lb.maxX) lb = { minX: -8, minY: -Math.max(height, 12), maxX: 8, maxY: 6 };
   const rot = st.rot || 0, sx = st.mirror ? -1 : 1;
-  const out = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
-  for (const [cx, cy] of [[lb.minX, lb.minY], [lb.maxX, lb.minY], [lb.maxX, lb.maxY], [lb.minX, lb.maxY]]) {
+  const out: Box = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+  for (const [cx, cy] of [[lb.minX, lb.minY], [lb.maxX, lb.minY], [lb.maxX, lb.maxY], [lb.minX, lb.maxY]] as const) {
     const p = rotatePoint(cx * sx, cy, rot); expandBox(out, st.x + p.x, st.y + p.y);
   }
   const pad = 5;
   return { minX: out.minX - pad, minY: out.minY - pad, maxX: out.maxX + pad, maxY: out.maxY + pad };
 }
 
-export function contentBounds(stitches) {
+export function contentBounds(stitches: Placeable[]): Box {
   if (!stitches.length) return { minX: -160, minY: -160, maxX: 160, maxY: 160 };
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const st of stitches) {
@@ -130,13 +126,13 @@ export function contentBounds(stitches) {
 }
 
 // ---- legend (export) ------------------------------------------------------
-function usedTypes(stitches) {
-  const seen = new Set(), order = [];
+export function usedTypes(stitches: Stitch[]): StitchType[] {
+  const seen = new Set<StitchType>(); const order: StitchType[] = [];
   for (const st of stitches) if (!seen.has(st.type)) { seen.add(st.type); order.push(st.type); }
   return order;
 }
 
-function legendSVG(stitches, x, y, color) {
+function legendSVG(stitches: Stitch[], x: number, y: number, color: string): { markup: string; height: number } {
   const types = usedTypes(stitches), rowH = 34;
   let out = `<g transform="translate(${round(x)} ${round(y)})">`;
   out += `<text x="0" y="-12" font-family="system-ui,Segoe UI,Arial" font-size="15" font-weight="700" fill="${color}">Legend</text>`;
@@ -151,7 +147,7 @@ function legendSVG(stitches, x, y, color) {
   return { markup: out + '</g>', height: types.length * rowH + 12 };
 }
 
-function legendWidth(stitches) {
+function legendWidth(stitches: Stitch[]): number {
   const types = usedTypes(stitches);
   if (!types.length) return 0;
   let maxChars = 7;
@@ -163,8 +159,9 @@ function legendWidth(stitches) {
   return 40 + maxChars * 7.6 + 16;
 }
 
-// Full standalone <svg> for SVG / PNG / print export.
-export function chartToSVG(pattern, opts = {}) {
+export interface ChartOpts { padding?: number; background?: string | null; legend?: boolean; title?: string; color?: string; scale?: number; }
+
+export function chartToSVG(pattern: Pattern, opts: ChartOpts = {}): string {
   const { padding = 30, background = '#ffffff', legend = true, title = '', color = INK, scale = 1 } = opts;
   const stitches = pattern.stitches || [];
   const showLegend = legend && stitches.length > 0;
@@ -194,8 +191,8 @@ export function chartToSVG(pattern, opts = {}) {
   const titleMarkup = title
     ? `<text x="${round(minX + w / 2)}" y="${round(minY + 34)}" text-anchor="middle" font-family="system-ui,Segoe UI,Arial" font-size="26" font-weight="800" fill="${color}">${escapeXML(title)}</text>`
     : '';
-  const bg = background ? `<rect x="${round(minX)}" y="${round(minY)}" width="${round(w)}" height="${round(h)}" fill="${background}"/>` : '';
+  const bg = background
+    ? `<rect x="${round(minX)}" y="${round(minY)}" width="${round(w)}" height="${round(h)}" fill="${background}"/>`
+    : '';
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${round(w * scale)}" height="${round(h * scale)}" viewBox="${round(minX)} ${round(minY)} ${round(w)} ${round(h)}">${bg}${titleMarkup}${body}${legendMarkup}</svg>`;
 }
-
-export { usedTypes };

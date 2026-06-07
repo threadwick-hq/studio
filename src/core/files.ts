@@ -1,14 +1,15 @@
-// files.js — saving & loading: project files, image export, and the print/PDF
-// composer that lays a whole project out as a ready-to-use pattern document.
+// Saving & loading: project files, image export, and the print/PDF composer.
 
-import { chartToSVG } from './render.js';
-import { chainOrder } from './connectivity.js';
-import { isStart, STITCHES } from './symbols.js';
-import { projectToFile, projectFromFile } from './model.js';
-import { slug, escapeHTML } from './util.js';
+import { chartToSVG } from './render';
+import { chainOrder } from './connectivity';
+import { isStart, STITCHES } from './symbols';
+import { projectToFile, projectFromFile } from './model';
+import { slug, escapeXML } from './util';
+import type { Project, Pattern } from './types';
 
-// ---- generic download ------------------------------------------------------
-function download(filename, blob) {
+const escapeHTML = escapeXML;
+
+function download(filename: string, blob: Blob): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = filename;
@@ -16,14 +17,12 @@ function download(filename, blob) {
   setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
-// ---- project file (export / import) ---------------------------------------
-export function exportProjectFile(project) {
+export function exportProjectFile(project: Project): void {
   const data = JSON.stringify(projectToFile(project), null, 2);
   download(`${slug(project.name, 'project')}.stitchgrid.json`, new Blob([data], { type: 'application/json' }));
 }
 
-// Opens the OS file picker; resolves to a normalized project (or null).
-export function importProjectFile() {
+export function importProjectFile(): Promise<Project | null> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -33,7 +32,7 @@ export function importProjectFile() {
       if (!file) return resolve(null);
       const reader = new FileReader();
       reader.onload = () => {
-        try { resolve(projectFromFile(JSON.parse(reader.result))); }
+        try { resolve(projectFromFile(JSON.parse(String(reader.result)))); }
         catch { resolve(null); }
       };
       reader.onerror = () => resolve(null);
@@ -43,23 +42,23 @@ export function importProjectFile() {
   });
 }
 
-// ---- image export ----------------------------------------------------------
-export function exportPatternSVG(pattern, title) {
+export function exportPatternSVG(pattern: Pattern, title?: string): void {
   const svg = chartToSVG(pattern, { title: title || pattern.name, legend: true });
   download(`${slug(title || pattern.name, 'pattern')}.svg`, new Blob([svg], { type: 'image/svg+xml' }));
 }
 
-export function exportPatternPNG(pattern, title, scale = 3) {
+export function exportPatternPNG(pattern: Pattern, title?: string, scale = 3): void {
   const svg = chartToSVG(pattern, { title: title || pattern.name, legend: true });
   const img = new Image();
   const blob = new Blob([svg], { type: 'image/svg+xml' });
   const url = URL.createObjectURL(blob);
   img.onload = () => {
     const m = svg.match(/width="(\d+(?:\.\d+)?)" height="(\d+(?:\.\d+)?)"/);
-    const w = m ? +m[1] : img.width, h = m ? +m[2] : img.height;
+    const w = m ? +m[1]! : img.width, h = m ? +m[2]! : img.height;
     const canvas = document.createElement('canvas');
     canvas.width = Math.round(w * scale); canvas.height = Math.round(h * scale);
     const ctx = canvas.getContext('2d');
+    if (!ctx) { URL.revokeObjectURL(url); return; }
     ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     URL.revokeObjectURL(url);
@@ -70,16 +69,14 @@ export function exportPatternPNG(pattern, title, scale = 3) {
 }
 
 // ---- written instructions --------------------------------------------------
-// Collapse a round's chain into a human-readable line: runs of the same stitch
-// become "3 dc", chains/slip-stitches inline (e.g. "3 dc, ch 2, 3 dc").
-export function summarizeRound(pattern, roundId) {
+export function summarizeRound(pattern: Pattern, roundId: string): string {
   const order = chainOrder(pattern.stitches, roundId).filter((s) => !isStart(s.type));
   if (!order.length) return '';
-  const parts = [];
+  const parts: string[] = [];
   let i = 0;
   while (i < order.length) {
-    const t = order[i].type; let n = 1;
-    while (i + n < order.length && order[i + n].type === t) n++;
+    const t = order[i]!.type; let n = 1;
+    while (i + n < order.length && order[i + n]!.type === t) n++;
     const abbr = (STITCHES[t] && STITCHES[t].abbr) || t;
     parts.push(t === 'ch' && n > 1 ? `ch ${n}` : (n > 1 ? `${n} ${abbr}` : abbr));
     i += n;
@@ -87,27 +84,23 @@ export function summarizeRound(pattern, roundId) {
   return parts.join(', ');
 }
 
-export function patternStartLabel(pattern) {
+export function patternStartLabel(pattern: Pattern): string | null {
   const st = pattern.stitches.find((s) => isStart(s.type));
   const type = st ? st.type : pattern.start;
   return type && STITCHES[type] ? STITCHES[type].name : null;
 }
 
 // ---- print / PDF composer --------------------------------------------------
-// Lays out the project as a document: a page per pattern (chart + legend +
-// round-by-round instructions) followed by the shared resources. Opens the
-// browser print dialog so the user can Save as PDF.
-export function printProject(project) {
+export function printProject(project: Project): void {
   const win = window.open('', '_blank');
   if (!win) { alert('Please allow pop-ups to compose the PDF.'); return; }
   win.document.write(buildPrintDoc(project));
   win.document.close();
   win.focus();
-  // give images/SVG a beat to lay out before invoking print
-  setTimeout(() => { try { win.print(); } catch {} }, 350);
+  setTimeout(() => { try { win.print(); } catch { /* user cancelled */ } }, 350);
 }
 
-function buildPrintDoc(project) {
+function buildPrintDoc(project: Project): string {
   const patterns = (project.patterns || []).map((pat) => {
     const chart = chartToSVG(pat, { title: '', legend: true, padding: 24 });
     const start = patternStartLabel(pat);
@@ -124,14 +117,13 @@ function buildPrintDoc(project) {
       </section>`;
   }).join('');
 
-  const r = project.resources || {};
-  const block = (title, items) => items && items.length
-    ? `<h3>${escapeHTML(title)}</h3><ul>${items.join('')}</ul>` : '';
+  const r = project.resources || { yarns: [], links: [], notes: [], variations: [] };
+  const block = (title: string, items: string[]): string => items && items.length ? `<h3>${escapeHTML(title)}</h3><ul>${items.join('')}</ul>` : '';
   const resources =
-    block('Yarns', (r.yarns || []).map((y) => `<li>${escapeHTML([y.name, y.brand, y.weight, y.color].filter(Boolean).join(' · '))}${y.notes ? ' — ' + escapeHTML(y.notes) : ''}</li>`)) +
-    block('Links & videos', (r.links || []).map((l) => `<li>${escapeHTML(l.title || l.url)}${l.url ? ` — <span class="url">${escapeHTML(l.url)}</span>` : ''}</li>`)) +
-    block('Notes & tips', (r.notes || []).map((n) => `<li><b>${escapeHTML(n.title)}</b> ${escapeHTML(n.body)}</li>`)) +
-    block('Variations', (r.variations || []).map((v) => `<li><b>${escapeHTML(v.title)}</b> ${escapeHTML(v.body)}</li>`));
+    block('Yarns', r.yarns.map((y) => `<li>${escapeHTML([y.name, y.brand, y.weight, y.color].filter(Boolean).join(' · '))}${y.notes ? ' — ' + escapeHTML(y.notes) : ''}</li>`)) +
+    block('Links & videos', r.links.map((l) => `<li>${escapeHTML(l.title || l.url)}${l.url ? ` — <span class="url">${escapeHTML(l.url)}</span>` : ''}</li>`)) +
+    block('Notes & tips', r.notes.map((n) => `<li><b>${escapeHTML(n.title)}</b> ${escapeHTML(n.body)}</li>`)) +
+    block('Variations', r.variations.map((v) => `<li><b>${escapeHTML(v.title)}</b> ${escapeHTML(v.body)}</li>`));
 
   return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHTML(project.name)}</title>
   <style>
@@ -149,7 +141,6 @@ function buildPrintDoc(project) {
     .start { margin: 6px 0; }
     .muted { color: #9a8f7d; }
     .url { color: #6b675f; font-style: italic; word-break: break-all; }
-    .resources { page-break-before: auto; }
     footer { margin-top: 30px; color: #b3aa98; font-size: 12px; }
   </style></head><body>
     <h1>${escapeHTML(project.name)}</h1>

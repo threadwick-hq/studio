@@ -61,12 +61,13 @@ instructions and resources — into a print/PDF document.
 ## Run it locally
 
 ```bash
-node server.js          # zero-dependency static server
-# open http://localhost:8080
+npm install
+npm run dev        # Vite dev server (http://localhost:5173)
+npm run build      # type-check + production build into docs/
+npm run preview    # serve the production build (http://localhost:8080)
 ```
 
-The app is plain ES modules — no build step. Any static server works
-(`python3 -m http.server` too); `node server.js` just keeps it dependency-free.
+The UI is **React 18 + Ant Design v5** in **strict TypeScript**, built with Vite.
 
 ## Exporting
 
@@ -78,47 +79,48 @@ The app is plain ES modules — no build step. Any static server works
 
 ## Architecture
 
-The core is deliberately **DOM-free and unit-tested**; the UI is a thin layer.
+The core is deliberately **DOM-free and unit-tested**; the React/antd UI is a
+thin layer on top, and the interactive canvas is an imperative controller mounted
+into React via a ref.
 
 ```
-js/
-  geometry.js      pure 2D math (polar/cartesian, rotation)
-  symbols.js       stitch-symbol library (primitive descriptors)
-  render.js        the one renderer: descriptors -> SVG (editor + export)
-  connectivity.js  origin/base/space/chain model (the procedural core)
-  model.js         project / pattern / resource factories + migration
-  store.js         central store: data, procedural edits, undo/redo, persistence
-  files.js         project import/export, SVG/PNG, PDF composer, instructions
-  editorCanvas.js  interactive surface (the two-click insert workflow)
-  editorView.js    editor screen: toolbar, palette, panels
-  projectsView.js  dashboard (project cards)
-  projectView.js   a project: patterns + resources
-  app.js           bootstrap, router, modals, autosave
-server.js          zero-dependency static server (local dev)
+src/core/         framework-agnostic core (strict TS, unit-tested)
+  types.ts          shared domain types
+  geometry.ts       pure 2D math (polar/cartesian, rotation)
+  symbols.ts        stitch-symbol library (primitive descriptors)
+  render.ts         the one renderer: descriptors -> SVG (editor + export)
+  connectivity.ts   origin / base / space / chain model (the procedural core)
+  model.ts          project / pattern / resource factories + migration
+  store.ts          central store: data, procedural edits, undo/redo, persistence
+  files.ts          project import/export, SVG/PNG, PDF composer, instructions
+  sample.ts         the worked sample project
+  editorCanvas.ts   interactive surface (the two-click insert workflow)
+src/                React + Ant Design UI
+  main.tsx theme.ts useStore.ts App.tsx index.css
+  components/ Glyph Thumb
+  editor/CanvasView.tsx        mounts the canvas controller into React
+  views/ ProjectsView ProjectView EditorView
+docs/             the built site (committed; served by GitHub Pages)
 ```
 
 ## Testing
 
 ```bash
-npm test            # dependency-free core tests (just node)
-npm run test:browser # drives the live app in headless Chromium (needs puppeteer
-                     #   + a running server on :8080)
+npm test         # Vitest core tests (the DOM-free model)
+npm run typecheck # strict tsc --noEmit
 ```
 
 ## Deployment
 
-The app is static (no build step), so GitHub Pages can serve it straight from the
-repository. Enable it once under **Settings → Pages → Build and deployment →
-Source: *Deploy from a branch* → Branch: `main` / `/ (root)`**. After that every
-push to `main` redeploys automatically; the committed `.nojekyll` tells Pages to
-publish the files as-is. The site root (`index.html`) loads `js/` and `css/`
-directly.
+Ant Design needs a bundler, so the app is built with Vite into `docs/` (committed,
+`base: './'`). Enable Pages once under **Settings → Pages → Build and deployment →
+Source: *Deploy from a branch* → Branch: `main` / `/docs`**. After that, each time
+`docs/` is rebuilt and pushed to `main` the site redeploys. Run `npm run build`
+before committing UI changes so `docs/` stays in sync.
 
-> Prefer Actions-based deploys (e.g. to gate on tests)? Add a
-> `.github/workflows/deploy.yml` that runs `node test/core.test.js` and then
-> `actions/upload-pages-artifact` + `actions/deploy-pages`, and switch the Pages
-> source to *GitHub Actions*. (It isn't committed here because the automation
-> credential lacks the `workflow` scope to push workflow files.)
+> An Actions workflow that builds and deploys on push would remove the “rebuild
+> docs/ by hand” step, but the automation credential here lacks the `workflow`
+> scope to push files under `.github/workflows/`.
 
 ## Roadmap
 
