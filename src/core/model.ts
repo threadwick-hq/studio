@@ -121,8 +121,9 @@ export function normalizeProject(p: any = {}): Project {
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 // ---- the "Start" row (row 0) ----------------------------------------------
-// Row 0 is always the Start row: it exists from creation and holds only the
-// start marker. The first round is the Start row for a granny pattern.
+// rounds[0] is always the Start row: it exists from creation and holds only the
+// start marker; the working rows follow it. These helpers treat rounds[0] as
+// the Start row.
 export function startRowId(pat: Pattern): string | null {
   return pat.rounds[0] ? pat.rounds[0].id : null;
 }
@@ -162,9 +163,10 @@ export function projectToFile(project: Project): ProjectFile {
   return { format: FILE_FORMAT, version: FILE_VERSION, exportedAt: nowISO(), project: deepClone(project) };
 }
 
-export function projectFromFile(data: any): Project | null {
+export function projectFromFile(data: unknown): Project | null {
   if (!data || typeof data !== 'object') return null;
-  const raw = data.project && typeof data.project === 'object' ? data.project : data;
-  if (!raw || (!Array.isArray(raw.patterns) && !raw.name)) return null;
+  const rec = data as Record<string, unknown>;
+  const raw = (rec.project && typeof rec.project === 'object' ? rec.project : rec) as Record<string, unknown>;
+  if (!Array.isArray(raw.patterns) && !raw.name) return null;
   return normalizeProject(raw);
 }

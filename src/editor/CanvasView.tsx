@@ -11,18 +11,20 @@ export function CanvasView({ controllerRef, onChange }: {
   onChange: () => void;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
+  // keep the latest onChange in a ref so the mount-once effect never goes stale
+  const onChangeRef = useRef(onChange);
+  useEffect(() => { onChangeRef.current = onChange; });
 
   useEffect(() => {
     const svg = svgRef.current;
     if (!svg) return;
-    const c = initCanvas(store, svg, { onChange });
+    const c = initCanvas(store, svg, { onChange: () => onChangeRef.current() });
     controllerRef.current = c;
-    onChange();
+    onChangeRef.current();
     const unsub = store.subscribe(() => c.invalidate());
     const raf = requestAnimationFrame(() => c.fit());
     return () => { cancelAnimationFrame(raf); unsub(); c.destroy(); controllerRef.current = null; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [controllerRef]);
 
-  return <svg ref={svgRef} id="ed-canvas" className="ed-canvas" xmlns="http://www.w3.org/2000/svg" />;
+  return <svg ref={svgRef} id="ed-canvas" className="ed-canvas" role="img" aria-label="Pattern chart" xmlns="http://www.w3.org/2000/svg" />;
 }

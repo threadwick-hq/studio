@@ -26,7 +26,7 @@ export function ProjectsView() {
       const id = s.createProject(v.name?.trim() || 'Untitled project');
       if (v.description?.trim()) s.updateProject(id, { description: v.description.trim() });
       setNewOpen(false); form.resetFields(); s.openProject(id);
-    });
+    }).catch(() => { /* validation errors are shown inline by the form */ });
   };
 
   const onImport = async () => {
