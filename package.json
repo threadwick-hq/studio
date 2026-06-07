@@ -1,0 +1,18 @@
+{
+  "name": "stitchgrid-studio",
+  "version": "1.0.0",
+  "description": "stitchgrid studio — a crochet project designer. Design granny-square stitch charts the way you crochet them, and keep every project (patterns, yarns, links, notes) in one place.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "serve": "node server.js",
+    "test": "node test/core.test.js",
+    "test:browser": "node test/browser.smoke.mjs"
+  },
+  "keywords": ["crochet", "granny-square", "chart", "svg", "pattern", "designer"],
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "puppeteer": "^25.0.0"
+  }
+}
