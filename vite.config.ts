@@ -10,5 +10,13 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     sourcemap: false,
+    // antd is ~900 kB minified on its own — a known, cache-stable vendor cost.
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        // split the big vendors into their own cache-stable chunks
+        manualChunks: { antd: ['antd'], icons: ['iconoir-react'] },
+      },
+    },
   },
 });

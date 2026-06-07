@@ -22,12 +22,6 @@ export function norm360(a: number): number {
   return a < 0 ? a + 360 : a;
 }
 
-// Rotation (deg) so a symbol whose local "up" is (0,-1) points radially outward.
-export function radialRotation(x: number, y: number): number {
-  if (x === 0 && y === 0) return 0;
-  return norm360(rad2deg(Math.atan2(y, x)) + 90);
-}
-
 // Rotate a point about the origin by `deg` (clockwise in y-down space).
 export function rotatePoint(x: number, y: number, deg: number): Point {
   const a = deg2rad(deg);

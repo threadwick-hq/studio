@@ -9,8 +9,6 @@ import type { Shape, Built, StitchType } from './types';
 
 export const BAR = 15; // width of the horizontal "head" bar on post stitches
 
-export const SLASH_COUNT: Record<string, number> = { sc: 0, hdc: 0, dc: 1, tr: 2, dtr: 3 };
-
 export function postShapes(height: number, slashes = 0, { topBar = true }: { topBar?: boolean } = {}): Shape[] {
   const shapes: Shape[] = [{ k: 'line', x1: 0, y1: 0, x2: 0, y2: -height }];
   if (topBar) shapes.push({ k: 'line', x1: -BAR / 2, y1: -height, x2: BAR / 2, y2: -height });
@@ -78,10 +76,6 @@ export const STARTS = new Set<StitchType>(START_ORDER);
 
 export const STITCH_KEYS: Partial<Record<StitchType, string>> = { ch: 'c', slst: 'l', sc: 's', hdc: 'h', dc: 'd', tr: 't', dtr: 'e' };
 
-export function getStitch(type: StitchType): StitchDef | null {
-  return STITCHES[type] ?? null;
-}
-
 export function isStart(type: StitchType): boolean {
   return STARTS.has(type);
 }
@@ -89,11 +83,6 @@ export function isStart(type: StitchType): boolean {
 // "Real" stitches form spaces; chains, slip stitches and starts do not.
 export function isRealStitch(type: StitchType): boolean {
   return type !== 'ch' && type !== 'slst' && !STARTS.has(type);
-}
-
-export function labelFor(type: StitchType): { name: string; abbr: string } {
-  const s = STITCHES[type];
-  return s ? { name: s.name, abbr: s.abbr } : { name: type, abbr: '' };
 }
 
 export function defaultLen(type: StitchType): number {

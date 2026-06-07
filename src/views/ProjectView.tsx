@@ -11,7 +11,7 @@ import { useStore } from '../useStore';
 import { Thumb } from '../components/Thumb';
 import { exportProjectFile, printProject } from '../core/files';
 import { PATTERN_TYPES } from '../core/model';
-import type { Project, Pattern, ResourceKind } from '../core/types';
+import type { Project, Pattern, ResourceKind, Yarn, LinkRes, NoteRes, VariationRes } from '../core/types';
 
 const { Title } = Typography;
 
@@ -22,7 +22,8 @@ const RES_META: Record<ResourceKind, { title: string; add: string; empty: string
   variations: { title: 'Variations', add: 'Add variation', empty: 'Colourways and tweaks of this project.', Icon: VariationIcon },
 };
 
-type ResItem = Record<string, string>;
+type ResItem = Yarn | LinkRes | NoteRes | VariationRes;
+type ResForm = Partial<Yarn & LinkRes & NoteRes & VariationRes>;
 
 export function ProjectView() {
   const s = useStore();
@@ -31,7 +32,7 @@ export function ProjectView() {
   const [newPat, setNewPat] = useState(false);
   const [patForm] = Form.useForm<{ name: string; type: 'granny' | 'round' | 'flat' }>();
   const [res, setRes] = useState<{ kind: ResourceKind; item: ResItem | null } | null>(null);
-  const [resForm] = Form.useForm();
+  const [resForm] = Form.useForm<ResForm>();
 
   if (!prj) return null;
 
@@ -45,12 +46,12 @@ export function ProjectView() {
 
   const openRes = (kind: ResourceKind, item: ResItem | null) => {
     setRes({ kind, item });
-    setTimeout(() => { resForm.resetFields(); resForm.setFieldsValue(item || (kind === 'links' ? { kind: 'video' } : {})); }, 0);
+    setTimeout(() => { resForm.resetFields(); resForm.setFieldsValue(item ?? (kind === 'links' ? { kind: 'video' } : {})); }, 0);
   };
   const saveRes = () => {
     if (!res) return;
     resForm.validateFields().then((v) => {
-      if (res.item) s.updateResource(prj.id, res.kind, res.item.id!, v);
+      if (res.item) s.updateResource(prj.id, res.kind, res.item.id, v);
       else s.addResource(prj.id, res.kind, v);
       setRes(null);
     });
@@ -173,7 +174,7 @@ export function ProjectView() {
 }
 
 function ResourceList({ project, kind, onEdit, onDelete }: { project: Project; kind: ResourceKind; onEdit: (it: ResItem) => void; onDelete: (id: string) => void; }) {
-  const items = project.resources[kind] as unknown as ResItem[];
+  const items = project.resources[kind] as ResItem[]; // widen union-of-arrays to array-of-union
   if (!items.length) return <p className="muted small">{RES_META[kind].empty}</p>;
   return (
     <div className="res-list">
@@ -182,7 +183,7 @@ function ResourceList({ project, kind, onEdit, onDelete }: { project: Project; k
           <div className="res-text">{resourceLine(kind, it)}</div>
           <div className="res-acts">
             <Button type="text" size="small" icon={<EditIcon />} onClick={() => onEdit(it)} />
-            <Button type="text" size="small" danger icon={<DeleteIcon />} onClick={() => onDelete(it.id!)} />
+            <Button type="text" size="small" danger icon={<DeleteIcon />} onClick={() => onDelete(it.id)} />
           </div>
         </div>
       ))}
@@ -192,12 +193,15 @@ function ResourceList({ project, kind, onEdit, onDelete }: { project: Project; k
 
 function resourceLine(kind: ResourceKind, it: ResItem) {
   if (kind === 'yarns') {
-    const head = [it.name, it.brand].filter(Boolean).join(' · ') || 'Yarn';
-    const sub = [it.weight, it.color].filter(Boolean).join(' · ');
-    return <><b>{it.hex ? <span className="swatch" style={{ background: it.hex }} /> : null}{head}</b>{sub && <small>{sub}</small>}{it.notes && <small>{it.notes}</small>}</>;
+    const y = it as Yarn;
+    const head = [y.name, y.brand].filter(Boolean).join(' · ') || 'Yarn';
+    const sub = [y.weight, y.color].filter(Boolean).join(' · ');
+    return <><b>{y.hex ? <span className="swatch" style={{ background: y.hex }} /> : null}{head}</b>{sub && <small>{sub}</small>}{y.notes && <small>{y.notes}</small>}</>;
   }
   if (kind === 'links') {
-    return <><b>{it.title || it.url || 'Link'}</b>{it.url && <a className="res-url" href={it.url} target="_blank" rel="noreferrer">{it.url}</a>}</>;
+    const l = it as LinkRes;
+    return <><b>{l.title || l.url || 'Link'}</b>{l.url && <a className="res-url" href={l.url} target="_blank" rel="noreferrer">{l.url}</a>}</>;
   }
-  return <><b>{it.title || 'Untitled'}</b>{it.body && <small>{it.body}</small>}</>;
+  const n = it as NoteRes; // notes & variations share the {title, body} shape
+  return <><b>{n.title || 'Untitled'}</b>{n.body && <small>{n.body}</small>}</>;
 }

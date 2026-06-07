@@ -11,11 +11,12 @@ import { useStore } from '../useStore';
 import { CanvasView } from '../editor/CanvasView';
 import { Glyph } from '../components/Glyph';
 import type { CanvasController, Mode } from '../core/editorCanvas';
-import { STITCH_ORDER, START_ORDER, STITCHES, STITCH_KEYS, isStart, isRealStitch } from '../core/symbols';
+import { STITCH_ORDER, START_ORDER, STITCHES, STITCH_KEYS, isStart, isRealStitch, defaultLen } from '../core/symbols';
 import { chainOrder } from '../core/connectivity';
+import { usedTypes } from '../core/render';
 import { summarizeRound, exportPatternSVG, exportPatternPNG, printProject } from '../core/files';
-import { hasStart } from '../core/model';
-import { INK } from '../core/render';
+import { hasStart, isStartRow } from '../core/model';
+import { INK, ORIGIN, SPACE, SELECT } from '../core/colors';
 import type { Stitch, StitchType } from '../core/types';
 
 const { Title } = Typography;
@@ -63,7 +64,7 @@ export function EditorView() {
       if (k === 'p') { c.setMode('pan'); return; }
       if (KEY_TO_TYPE[k]) {
         const cur = s.currentPattern();
-        const onStartRow = !!cur && cur.rounds[0]?.id === cur.activeRound;
+        const onStartRow = !!cur && isStartRow(cur, cur.activeRound);
         if (!onStartRow) c.setArmed(KEY_TO_TYPE[k]!); // no normal stitches on the Start row
         return;
       }
@@ -83,7 +84,7 @@ export function EditorView() {
   if (!pat) return null;
   const startRow = pat.rounds[0];
   const working = pat.rounds.slice(1);
-  const onStart = !!startRow && startRow.id === pat.activeRound;
+  const onStart = isStartRow(pat, pat.activeRound);
   const started = hasStart(pat);
   const exportItems = [
     { key: 'svg', label: 'SVG image' },
@@ -209,7 +210,7 @@ export function EditorView() {
 // working row you pick a normal stitch.
 function Palette({ pat, chrome, ctrl }: { pat: import('../core/types').Pattern; chrome: Chrome; ctrl: React.MutableRefObject<CanvasController | null>; }) {
   const s = useStore();
-  const onStart = pat.rounds[0]?.id === pat.activeRound;
+  const onStart = isStartRow(pat, pat.activeRound);
   if (onStart) {
     return (
       <div className="panel">
@@ -250,9 +251,9 @@ function Inspector({ pat, ctrl }: { pat: import('../core/types').Pattern; ctrl: 
       <p>Nothing selected. In <b>Select</b> mode, click a stitch or drag a box.</p>
       <p>Selected stitches reveal their framework:</p>
       <ul className="insp-legend">
-        <li><span className="sw" style={{ background: '#5cb3ff' }} /> origin</li>
-        <li><span className="sw" style={{ background: '#e8830c' }} /> base / space</li>
-        <li><span className="sw" style={{ background: '#2f7bff' }} /> head</li>
+        <li><span className="sw" style={{ background: ORIGIN }} /> origin</li>
+        <li><span className="sw" style={{ background: SPACE }} /> base / space</li>
+        <li><span className="sw" style={{ background: SELECT }} /> head</li>
       </ul>
     </div>
   );
@@ -275,7 +276,7 @@ function Inspector({ pat, ctrl }: { pat: import('../core/types').Pattern; ctrl: 
       </label>
       {post && (
         <label className="field"><span>Length</span>
-          <Slider min={10} max={70} value={Math.round(first.len ?? STITCHES[first.type].build().height)}
+          <Slider min={10} max={70} value={Math.round(first.len ?? defaultLen(first.type))}
             onChange={(v) => s.liveUpdateSelection({ len: v })} onChangeComplete={() => s.endLive()} />
         </label>
       )}
@@ -298,8 +299,7 @@ function Inspector({ pat, ctrl }: { pat: import('../core/types').Pattern; ctrl: 
 }
 
 function Legend({ pat }: { pat: import('../core/types').Pattern }) {
-  const seen: StitchType[] = []; const set = new Set<StitchType>();
-  for (const st of pat.stitches) if (!set.has(st.type)) { set.add(st.type); seen.push(st.type); }
+  const seen = usedTypes(pat.stitches);
   if (!seen.length) return <p className="muted small">Place a stitch to build the legend.</p>;
   return (
     <div className="legend">
@@ -340,8 +340,8 @@ function HelpModal({ open, onClose }: { open: boolean; onClose: () => void }) {
       <ol className="help-steps">
         <li><b>Start:</b> pick a centre (magic ring, etc.). It drops into the Start row.</li>
         <li><b>Row:</b> choose which row you're working in the Rows panel (top-right).</li>
-        <li><b>Insert:</b> press <kbd>I</kbd> or a stitch key (<kbd>D</kbd>=dc). The origin is <span className="sw" style={{ background: '#5cb3ff' }} /> light blue.</li>
-        <li><b>Base:</b> orange dots <span className="sw" style={{ background: '#e8830c' }} /> mark spaces. Click a space or a stitch head, then click again to set the head.</li>
+        <li><b>Insert:</b> press <kbd>I</kbd> or a stitch key (<kbd>D</kbd>=dc). The origin is <span className="sw" style={{ background: ORIGIN }} /> light blue.</li>
+        <li><b>Base:</b> orange dots <span className="sw" style={{ background: SPACE }} /> mark spaces. Click a space or a stitch head, then click again to set the head.</li>
         <li><b>Chains:</b> flow off the origin in one click and auto-align evenly between neighbours.</li>
         <li><b>Insert after:</b> <kbd>Alt</kbd>/<kbd>⌘</kbd>-click a stitch to set it as origin; the next stitch turns <span className="sw" style={{ background: '#a259ff' }} /> purple and everything after greys out.</li>
       </ol>

@@ -11,7 +11,7 @@ import { isStart, isRealStitch } from './symbols';
 import { topOfStitch, buildStitchShapes } from './render';
 import { chainOrder } from './connectivity';
 import type {
-  Project, Pattern, Round, Stitch, Base, StitchType, ResourceKind, Resources, UIState, ProjectFile,
+  Project, Pattern, Round, Stitch, Base, StitchType, ResourceKind, Resources, UIState,
 } from './types';
 
 const SAVE_KEY = 'stitchgridstudio:v2';
@@ -152,23 +152,29 @@ class Store {
   }
 
   // ---- resources -----------------------------------------------------------
-  addResource(projectId: string, kind: ResourceKind, item: Record<string, unknown>): string | null {
+  // Generic over the kind so the public surface is type-safe (the per-kind item
+  // shape is checked at the call site). The single internal cast is unavoidable
+  // when indexing resources by a generic key, and is contained here.
+  addResource<K extends ResourceKind>(projectId: string, kind: K, item: Partial<Omit<Resources[K][number], 'id'>>): string | null {
     const prj = this.getProject(projectId);
-    if (!prj || !prj.resources[kind]) return null;
-    const withId = { id: uid(kind.slice(0, 3)), ...item } as Resources[typeof kind][number];
-    (prj.resources[kind] as unknown[]).push(withId);
+    if (!prj) return null;
+    const list = prj.resources[kind] as Resources[K][number][];
+    const withId = { id: uid(kind.slice(0, 3)), ...item } as Resources[K][number];
+    list.push(withId);
     prj.updatedAt = nowISO(); this.emit(); return withId.id;
   }
-  updateResource(projectId: string, kind: ResourceKind, itemId: string, patch: Record<string, unknown>): void {
+  updateResource<K extends ResourceKind>(projectId: string, kind: K, itemId: string, patch: Partial<Omit<Resources[K][number], 'id'>>): void {
     const prj = this.getProject(projectId);
-    const it = prj && (prj.resources[kind] as { id: string }[]).find((x) => x.id === itemId);
-    if (prj && it) { Object.assign(it, patch); prj.updatedAt = nowISO(); this.emit(); }
+    if (!prj) return;
+    const it = (prj.resources[kind] as Resources[K][number][]).find((x) => x.id === itemId);
+    if (it) { Object.assign(it, patch); prj.updatedAt = nowISO(); this.emit(); }
   }
   removeResource(projectId: string, kind: ResourceKind, itemId: string): void {
     const prj = this.getProject(projectId);
-    if (!prj || !prj.resources[kind]) return;
-    (prj.resources[kind] as { id: string }[]) = (prj.resources[kind] as { id: string }[]).filter((x) => x.id !== itemId);
-    prj.updatedAt = nowISO(); this.emit();
+    if (!prj) return;
+    const list = prj.resources[kind] as { id: string }[];
+    const i = list.findIndex((x) => x.id === itemId);
+    if (i >= 0) { list.splice(i, 1); prj.updatedAt = nowISO(); this.emit(); }
   }
 
   // ---- editor: history -----------------------------------------------------

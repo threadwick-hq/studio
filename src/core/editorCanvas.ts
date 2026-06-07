@@ -4,22 +4,18 @@
 // one-click chains that flow off the origin). React mounts it via a ref.
 
 import { clamp, round } from './util';
-import { buildStitchShapes, shapesMarkup, stitchToSVG, topOfStitch, contentBounds, INK } from './render';
+import { buildStitchShapes, shapesMarkup, stitchToSVG, topOfStitch, contentBounds } from './render';
+import { INK, GHOST, ORIGIN, SPACE, NEXT, SELECT } from './colors';
 import {
   pickBase, basePoint, nearestStitch, spacesForRound, successorInRound,
   chainFrom, defaultOriginId,
 } from './connectivity';
 import { isStart } from './symbols';
-import { hasStart } from './model';
+import { hasStart, isStartRow } from './model';
 import type { Store } from './store';
 import type { Stitch, StitchType, Base, BaseHit, Point } from './types';
 
 const NS = 'http://www.w3.org/2000/svg';
-const GHOST = '#2f7bff';
-const ORIGIN = '#5cb3ff';
-const SPACE = '#e8830c';
-const NEXT = '#a259ff';
-const SELECT = '#2f7bff';
 
 export type Mode = 'select' | 'insert' | 'pan';
 type Phase = 'base' | 'head';
@@ -207,7 +203,7 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
     lastU = u;
     if (mode !== 'insert' || drag || marquee || panning) { clearCursor(); return; }
     const p = pat();
-    if (!p || p.rounds[0]?.id === p.activeRound || !hasStart(p)) { clearCursor(); return; }
+    if (!p || isStartRow(p, p.activeRound) || !hasStart(p)) { clearCursor(); return; }
     const og = originGlyph();
     if (armed === 'ch') {
       const o = originId ? store.byIdMap().get(originId) : undefined;
@@ -250,8 +246,7 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
   function insertDown(e: PointerEvent, u: Point): void {
     const p = pat();
     if (!p) return;
-    const onStartRow = p.rounds[0]?.id === p.activeRound;
-    if (onStartRow || !hasStart(p)) return; // the Start row holds only the start (placed via the palette); nothing else until one exists
+    if (isStartRow(p, p.activeRound) || !hasStart(p)) return; // the Start row holds only the start (placed via the palette); nothing else until one exists
     if (e.altKey || e.metaKey) {
       const hit = (e.target as Element).closest('[data-id]');
       const id = hit ? hit.getAttribute('data-id') : (nearestStitch(stitches(), u.x, u.y, 60)?.id ?? null);
@@ -365,9 +360,11 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
   const ro = new ResizeObserver(() => applyViewBox());
   ro.observe(svg);
 
-  let renderQueued = false;
-  const raf = window.requestAnimationFrame ? window.requestAnimationFrame.bind(window) : ((f: FrameRequestCallback) => setTimeout(f, 16) as unknown as number);
-  function scheduleRender(): void { if (renderQueued) return; renderQueued = true; raf(() => { renderQueued = false; render(); }); }
+  let rafId = 0;
+  function scheduleRender(): void {
+    if (rafId) return;
+    rafId = requestAnimationFrame(() => { rafId = 0; render(); });
+  }
 
   function fit(): void {
     const b = contentBounds(stitches());
@@ -412,6 +409,7 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
     syncView() { const p = pat(); if (p) view = { ...p.view }; applyViewBox(); },
     destroy() {
       try { ro.disconnect(); } catch { /* gone */ }
+      if (rafId) cancelAnimationFrame(rafId);
       clearTimeout(saveTimer);
       svg.removeEventListener('pointerdown', onDown);
       svg.removeEventListener('pointermove', onMove);

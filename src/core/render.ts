@@ -5,9 +5,10 @@
 import { STITCHES } from './symbols';
 import { rotatePoint } from './geometry';
 import { round, escapeXML } from './util';
+import { INK } from './colors';
 import type { Shape, Built, Point, StitchType, Stitch, Pattern } from './types';
 
-export const INK = '#21201c';
+export { INK };
 const SW = 2.4;
 
 type Placeable = { type: StitchType; x: number; y: number; rot: number; len: number | null; mirror?: boolean; color?: string | null };
@@ -31,9 +32,19 @@ export function shapesMarkup(shapes: Shape[], color = INK, sw = SW): string {
   return shapes.map((s) => shapeToSVG(s, color, sw)).join('');
 }
 
+// Building a stitch's shapes is pure in (type, len), and it sits on the editor's
+// hot path (topOfStitch is called per pointer-move and per space calc), so cache
+// the result. Built objects are only ever read, never mutated.
+const builtCache = new Map<string, Built>();
 export function buildStitchShapes(type: StitchType, len?: number | null): Built {
-  const def = STITCHES[type];
-  return def ? def.build(len ?? undefined) : STITCHES.dc.build(len ?? undefined);
+  const key = type + '|' + (len ?? '');
+  let built = builtCache.get(key);
+  if (!built) {
+    const def = STITCHES[type] ?? STITCHES.dc;
+    built = def.build(len ?? undefined);
+    builtCache.set(key, built);
+  }
+  return built;
 }
 
 // A stitch's HEAD (top of the marker) in world space.
