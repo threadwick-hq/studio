@@ -7,15 +7,15 @@
     // ES-module scripts can't load over file:// (browsers block them by CORS).
     // If this file was opened directly, fall back to the self-contained bundle
     // so it still runs. When served over http(s), index.html works normally.
-    if (location.protocol === 'file:') location.replace('dist/stitchgrid.html');
+    if (location.protocol === 'file:') location.replace('dist/threadwick.html');
   </script>
-  <title>stitchgrid — crochet granny-square chart editor</title>
+  <title>Threadwick — the studio for fiber artists</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><line x1='16' y1='28' x2='16' y2='6' stroke='%231c1c1c' stroke-width='3'/><line x1='9' y1='6' x2='23' y2='6' stroke='%231c1c1c' stroke-width='3'/><line x1='10' y1='20' x2='22' y2='12' stroke='%231c1c1c' stroke-width='3'/></svg>" />
 </head>
 <body>
   <header id="topbar">
-    <div class="brand"><span class="brand-mark">✚</span> stitchgrid</div>
+    <div class="brand"><span class="brand-mark">✚</span> Threadwick</div>
     <input id="title" class="title-input" type="text" value="Untitled Granny Square" aria-label="Chart title" />
     <div class="spacer"></div>
     <div class="group">

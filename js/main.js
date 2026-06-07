@@ -13,7 +13,7 @@ import { initHelp } from './help.js';
 import { distributeRound } from './rounds.js';
 import { STITCH_KEYS } from './stitches.js';
 
-const SAVE_KEY = 'stitchgrid:autosave:v1';
+const SAVE_KEY = 'threadwick:autosave:v1';
 const KEY_TO_TYPE = Object.fromEntries(Object.entries(STITCH_KEYS).map(([type, key]) => [key, type]));
 
 const canvas = initCanvas(store);
@@ -104,4 +104,4 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('keyup', (e) => { if (e.key === ' ') canvas.setSpace(false); });
 
 // expose for debugging
-window.stitchgrid = { store, canvas, exporter };
+window.threadwick = { store, canvas, exporter };

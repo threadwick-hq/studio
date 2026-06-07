@@ -1,5 +1,5 @@
 {
-  "name": "stitchgrid",
+  "name": "threadwick",
   "version": "0.1.0",
   "description": "WYSIWYG editor for crochet granny-square stitch-symbol charts. Generates high-quality, highly readable pattern images.",
   "type": "module",

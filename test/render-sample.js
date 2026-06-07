@@ -21,7 +21,7 @@ const s1 = store.addCluster({ name: '3 dc shell', base: 'dc', legs: 3, joinBotto
 for (const x of [-46, 0, 46]) store.addStitch({ type: 'dc', x, y: -120, rot: 0 }, { select: false });
 store.addStitch({ type: s1, x: 122, y: -122 }, { select: false });
 out('sample-granny.svg', svg());
-out('basic-granny.stitchgrid.json', JSON.stringify(store.serialize(), null, 2));
+out('basic-granny.threadwick.json', JSON.stringify(store.serialize(), null, 2));
 
 // 2) Symbol reference sheet.
 const clusterMap = {
@@ -33,7 +33,7 @@ const clusterMap = {
 const stitches = [];
 ['ch', 'slst', 'sc', 'hdc', 'dc', 'tr', 'dtr', 'mr'].forEach((t, i) => stitches.push({ id: 'b' + i, type: t, x: i * 60 - 210, y: 0, rot: 0 }));
 Object.keys(clusterMap).forEach((t, i) => stitches.push({ id: 'c' + i, type: t, x: i * 80 - 120, y: 120, rot: 0 }));
-out('symbols.svg', chartToSVG({ title: 'stitchgrid symbols', stitches, clusterMap }, { legend: true, title: 'stitchgrid symbols' }));
+out('symbols.svg', chartToSVG({ title: 'Threadwick symbols', stitches, clusterMap }, { legend: true, title: 'Threadwick symbols' }));
 
 // 3) The hero: a realistic multi-round granny square (nested dc edges +
 //    colour-matched corner shells + a gold centre motif), all via 4-fold symmetry.
@@ -52,6 +52,6 @@ roundSquare(74, [-40, 0, 40], NAVY);
 roundSquare(124, [-92, -46, 0, 46, 92], TEAL);
 roundSquare(176, [-148, -99, -49, 0, 49, 99, 148], NAVY);
 out('granny-square.svg', svg());
-out('granny-square.stitchgrid.json', JSON.stringify(store.serialize(), null, 2));
+out('granny-square.threadwick.json', JSON.stringify(store.serialize(), null, 2));
 
 console.log('regenerated samples/: sample-granny, symbols, granny-square (+ 2 project files)');

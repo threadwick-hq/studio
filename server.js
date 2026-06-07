@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// server.js — a tiny zero-dependency static file server so stitchgrid runs
+// server.js — a tiny zero-dependency static file server so Threadwick runs
 // with just `node server.js` (no npm install, no build step). ES modules are
 // blocked over file://, so a local http origin is the simplest way to open it.
 
@@ -41,5 +41,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`\n  stitchgrid running at  http://localhost:${PORT}\n  (Ctrl+C to stop)\n`);
+  console.log(`\n  Threadwick running at  http://localhost:${PORT}\n  (Ctrl+C to stop)\n`);
 });

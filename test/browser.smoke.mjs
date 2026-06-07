@@ -17,9 +17,9 @@ await page.goto(URL, { waitUntil: 'networkidle0' });
 await page.waitForSelector('#canvas .stitch', { timeout: 8000 });
 
 const snap = () => page.evaluate(() => ({
-  stitches: window.stitchgrid.store.state.stitches.length,
-  sel: window.stitchgrid.store.selection.size,
-  tool: window.stitchgrid.canvas.getTool(),
+  stitches: window.threadwick.store.state.stitches.length,
+  sel: window.threadwick.store.selection.size,
+  tool: window.threadwick.canvas.getTool(),
 }));
 const box = await page.$eval('#canvas', (el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
 const cx = box.x + box.w / 2;
@@ -29,19 +29,19 @@ const before = await snap();
 
 // place a stitch (default tool is Place; 4-fold symmetry should add a group)
 await page.mouse.click(cx + 95, cy - 60);
-await page.waitForFunction((n) => window.stitchgrid.store.state.stitches.length > n, {}, before.stitches);
+await page.waitForFunction((n) => window.threadwick.store.state.stitches.length > n, {}, before.stitches);
 const afterPlace = await snap();
 
 // select + drag a stitch (pointerdown selects its group, then a drag moves it)
 await page.keyboard.press('v');
 const sb = await page.$eval('#canvas .stitch', (el) => { const r = el.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
-const posBefore = await page.evaluate(() => window.stitchgrid.store.state.stitches.map((s) => [Math.round(s.x), Math.round(s.y)]));
+const posBefore = await page.evaluate(() => window.threadwick.store.state.stitches.map((s) => [Math.round(s.x), Math.round(s.y)]));
 await page.mouse.move(sb.x, sb.y);
 await page.mouse.down();
 await page.mouse.move(sb.x + 55, sb.y - 10, { steps: 10 });
 await page.mouse.up();
 const afterDrag = await snap();
-const posAfter = await page.evaluate(() => window.stitchgrid.store.state.stitches.map((s) => [Math.round(s.x), Math.round(s.y)]));
+const posAfter = await page.evaluate(() => window.threadwick.store.state.stitches.map((s) => [Math.round(s.x), Math.round(s.y)]));
 const moved = JSON.stringify(posBefore) !== JSON.stringify(posAfter);
 
 // undo twice (revert drag, then revert place)

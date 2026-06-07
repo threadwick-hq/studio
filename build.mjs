@@ -1,5 +1,5 @@
-// build.mjs — bundle stitchgrid into self-contained artifacts (no server, no
-// modules): dist/stitchgrid.html (open it directly) and dist/stitchgrid.console.js
+// build.mjs — bundle Threadwick into self-contained artifacts (no server, no
+// modules): dist/threadwick.html (open it directly) and dist/threadwick.console.js
 // (paste into any browser console to launch the app). Run: npm run build.
 import * as esbuild from 'esbuild';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -33,20 +33,20 @@ mkdirSync(new URL('dist/', root), { recursive: true });
 const standalone =
   '<!doctype html><html lang="en"><head><meta charset="utf-8">' +
   '<meta name="viewport" content="width=device-width,initial-scale=1">' +
-  '<title>stitchgrid</title><style>\n' + css + '\n</style></head><body>\n' +
+  '<title>Threadwick</title><style>\n' + css + '\n</style></head><body>\n' +
   bodyInner + '\n<script>\n' + js + '\n</script></body></html>\n';
-writeFileSync(new URL('dist/stitchgrid.html', root), standalone);
+writeFileSync(new URL('dist/threadwick.html', root), standalone);
 
 // 4) console snippet — injects the CSS + DOM scaffold, then runs the app
 const snippet =
-  '/* stitchgrid — paste into any browser console (e.g. on about:blank) to run. */\n' +
+  '/* Threadwick — paste into any browser console (e.g. on about:blank) to run. */\n' +
   '(function(){\n' +
-  '  var s=document.getElementById("sg-style")||document.createElement("style");\n' +
-  '  s.id="sg-style"; s.textContent=' + JSON.stringify(css) + '; document.head.appendChild(s);\n' +
-  '  document.title="stitchgrid";\n' +
+  '  var s=document.getElementById("tw-style")||document.createElement("style");\n' +
+  '  s.id="tw-style"; s.textContent=' + JSON.stringify(css) + '; document.head.appendChild(s);\n' +
+  '  document.title="Threadwick";\n' +
   '  document.body.innerHTML=' + JSON.stringify(bodyInner) + ';\n' +
   '  ' + js + '\n' +
   '})();\n';
-writeFileSync(new URL('dist/stitchgrid.console.js', root), snippet);
+writeFileSync(new URL('dist/threadwick.console.js', root), snippet);
 
-console.log(`built dist/stitchgrid.html (${(standalone.length/1024).toFixed(0)} KB) and dist/stitchgrid.console.js (${(snippet.length/1024).toFixed(0)} KB)`);
+console.log(`built dist/threadwick.html (${(standalone.length/1024).toFixed(0)} KB) and dist/threadwick.console.js (${(snippet.length/1024).toFixed(0)} KB)`);

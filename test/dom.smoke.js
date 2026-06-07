@@ -25,11 +25,11 @@ assert.equal($('palette-starts').children.length, 3, 'three round-0 start elemen
 assert.ok($('canvas').children.length > 0, 'canvas rendered something');
 assert.ok($('legend-box').children.length > 0, 'legend populated from sample');
 assert.ok(/Nothing selected/.test($('inspector').textContent), 'inspector shows empty state');
-assert.ok(window.stitchgrid.store.state.stitches.length > 0, 'sample stitches present');
+assert.ok(window.threadwick.store.state.stitches.length > 0, 'sample stitches present');
 assert.ok($('rounds-list').children.length > 0, 'rounds listed');
 
 // exercise a few interactions through the store + renderer
-const { store } = window.stitchgrid;
+const { store } = window.threadwick;
 const n0 = store.state.stitches.length;
 store.setSymmetry({ order: 4, mirror: false });
 store.addStitch({ type: 'tr', x: 70, y: 0 });

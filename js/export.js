@@ -1,5 +1,5 @@
 // export.js — turn the chart into deliverables: SVG (vector master), PNG
-// (high-res raster), a .stitchgrid project file (save/load), and a first-cut
+// (high-res raster), a .threadwick project file (save/load), and a first-cut
 // print-to-PDF. All raster/print paths reuse the same chartToSVG output, so
 // every export matches the on-screen WYSIWYG chart exactly.
 
@@ -51,7 +51,7 @@ export function initExport(store, canvas) {
 
   function saveProject() {
     const data = JSON.stringify(store.serialize(), null, 2);
-    download(new Blob([data], { type: 'application/json' }), filenameBase() + '.stitchgrid.json');
+    download(new Blob([data], { type: 'application/json' }), filenameBase() + '.threadwick.json');
   }
 
   function openProject() {
