@@ -11,11 +11,21 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
-  "keywords": ["crochet", "granny-square", "chart", "svg", "pattern", "designer", "antd", "react", "typescript"],
+  "keywords": [
+    "crochet",
+    "granny-square",
+    "chart",
+    "svg",
+    "pattern",
+    "designer",
+    "antd",
+    "react",
+    "typescript"
+  ],
   "license": "MIT",
   "dependencies": {
-    "@ant-design/icons": "^5.5.2",
     "antd": "^5.22.0",
+    "iconoir-react": "^7.11.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

@@ -1,0 +1,22 @@
+// Central icon set — Iconoir, aliased to intent so swapping a glyph is one edit.
+// Default size/stroke is set once via <IconoirProvider> in main.tsx.
+export {
+  Plus as PlusIcon,
+  Upload as ImportIcon,
+  Download as DownloadIcon,
+  Copy as CopyIcon,
+  Trash as DeleteIcon,
+  MoreVert as MoreIcon,
+  NavArrowLeft as BackIcon,
+  Printer as PdfIcon,
+  Undo as UndoIcon,
+  Redo as RedoIcon,
+  HelpCircle as HelpIcon,
+  ZoomIn as ZoomInIcon,
+  ZoomOut as ZoomOutIcon,
+  Expand as FitIcon,
+  EditPencil as EditIcon,
+  RotateCameraLeft as RotateLeftIcon,
+  RotateCameraRight as RotateRightIcon,
+  Position as OriginIcon,
+} from 'iconoir-react';

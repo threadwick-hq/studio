@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { App, Button, Card, Dropdown, Empty, Form, Input, Modal } from 'antd';
 import {
-  PlusOutlined, ImportOutlined, MoreOutlined, DownloadOutlined, CopyOutlined, DeleteOutlined,
-} from '@ant-design/icons';
+  PlusIcon, ImportIcon, MoreIcon, DownloadIcon, CopyIcon, DeleteIcon,
+} from '../icons';
 import { useStore } from '../useStore';
 import { Thumb } from '../components/Thumb';
 import { Glyph } from '../components/Glyph';
@@ -46,8 +46,8 @@ export function ProjectsView() {
       <header className="topbar">
         <div className="brand"><span className="brand-mark">✿</span> stitchgrid <span className="brand-sub">studio</span></div>
         <div className="grow" />
-        <Button icon={<ImportOutlined />} onClick={onImport}>Import…</Button>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setNewOpen(true)}>New project</Button>
+        <Button icon={<ImportIcon />} onClick={onImport}>Import…</Button>
+        <Button type="primary" icon={<PlusIcon />} onClick={() => setNewOpen(true)}>New project</Button>
       </header>
 
       <div className="page">
@@ -71,10 +71,10 @@ export function ProjectsView() {
                     trigger={['click']}
                     menu={{
                       items: [
-                        { key: 'export', icon: <DownloadOutlined />, label: 'Export to file' },
-                        { key: 'dup', icon: <CopyOutlined />, label: 'Duplicate' },
+                        { key: 'export', icon: <DownloadIcon />, label: 'Export to file' },
+                        { key: 'dup', icon: <CopyIcon />, label: 'Duplicate' },
                         { type: 'divider' },
-                        { key: 'del', icon: <DeleteOutlined />, label: 'Delete', danger: true },
+                        { key: 'del', icon: <DeleteIcon />, label: 'Delete', danger: true },
                       ],
                       onClick: ({ key, domEvent }) => {
                         domEvent.stopPropagation();
@@ -84,7 +84,7 @@ export function ProjectsView() {
                       },
                     }}
                   >
-                    <Button type="text" size="small" icon={<MoreOutlined />} onClick={(e) => e.stopPropagation()} />
+                    <Button type="text" size="small" icon={<MoreIcon />} onClick={(e) => e.stopPropagation()} />
                   </Dropdown>
                 </div>
               </Card>
@@ -96,7 +96,7 @@ export function ProjectsView() {
               image={<div className="empty-art"><Glyph type="dc" size={56} /><Glyph type="mr" size={56} /><Glyph type="tr" size={56} /></div>}
               description={<><h2>Start your first project</h2><p className="muted">A project is your folder for everything: patterns, the yarns you used, video links and notes.</p></>}
             >
-              <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => setNewOpen(true)}>New project</Button>
+              <Button type="primary" size="large" icon={<PlusIcon />} onClick={() => setNewOpen(true)}>New project</Button>
             </Empty>
           </div>
         )}
