@@ -25,3 +25,20 @@ export function escapeXML(s) {
     ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c])
   );
 }
+
+// HTML-escape for safe text interpolation into innerHTML.
+export function escapeHTML(s) {
+  return String(s == null ? '' : s).replace(/[<>&"']/g, (c) =>
+    ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c])
+  );
+}
+
+export function nowISO() {
+  return new Date().toISOString();
+}
+
+// A filesystem-friendly slug, for export filenames.
+export function slug(s, fallback = 'untitled') {
+  const out = String(s || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return out || fallback;
+}

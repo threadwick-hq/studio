@@ -1,23 +1,18 @@
 {
-  "name": "stitchgrid",
-  "version": "0.1.0",
-  "description": "WYSIWYG editor for crochet granny-square stitch-symbol charts. Generates high-quality, highly readable pattern images.",
+  "name": "stitchgrid-studio",
+  "version": "1.0.0",
+  "description": "stitchgrid studio — a crochet project designer. Design granny-square stitch charts the way you crochet them, and keep every project (patterns, yarns, links, notes) in one place.",
   "type": "module",
   "scripts": {
     "start": "node server.js",
     "serve": "node server.js",
-    "test": "node test/pure.test.js",
-    "test:dom": "node test/dom.smoke.js",
-    "test:browser": "node test/browser.smoke.mjs",
-    "samples": "node test/render-sample.js",
-    "build": "node build.mjs"
+    "test": "node test/core.test.js",
+    "test:browser": "node test/browser.smoke.mjs"
   },
-  "keywords": ["crochet", "granny-square", "chart", "svg", "pattern", "wysiwyg"],
+  "keywords": ["crochet", "granny-square", "chart", "svg", "pattern", "designer"],
   "license": "MIT",
   "private": true,
   "devDependencies": {
-    "esbuild": "^0.28.0",
-    "jsdom": "^24.0.0",
-    "puppeteer": "^25.1.0"
+    "puppeteer": "^25.0.0"
   }
 }
