@@ -10,14 +10,7 @@ Status legend: 🔲 proposed · 🟡 next up · 🔵 in progress · ✅ done
 
 ## Next up
 
-### 🔲 Export-pattern dialog + Printable PDF
-Replace the editor's Export button with a **hamburger menu** → **"Export pattern…"**
-that opens a modal to choose **format** (SVG / PNG / PDF) and **settings**
-(include title, include legend, background white/transparent, PNG scale).
-
-The PDF is a **Printable PDF**: tailored for printing — no interactive states,
-**QR codes instead of links**, no media. (`qrcode` dependency is already added.)
-Interactive exports for smart devices come later.
+_Nothing queued._
 
 ## Proposed
 
@@ -32,4 +25,7 @@ Interactive exports for smart devices come later.
 
 ## Done
 
-_(history starts fresh after the backlog was cleared)_
+- ✅ **Export-pattern dialog + Printable PDF** — editor hamburger → "Export
+  pattern…" modal (SVG / PNG / Printable PDF + title, legend, background, PNG
+  scale). The project "Printable PDF" is print-tailored with **QR codes instead
+  of links** and no media.
