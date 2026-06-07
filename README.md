@@ -9,9 +9,9 @@ stitches one at a time: each stitch *comes out of* the previous one and is
 *worked into* a stitch or a space, exactly like real crochet. Even, readable
 charts fall out of that structure instead of out of calculation.
 
-**Live app:** published to GitHub Pages on every push to `main` — just visit the
-link, no install. Everything saves to your browser, and any project exports to a
-file you can back up or share.
+**Live app:** served from GitHub Pages — just visit the link, no install.
+Everything saves to your browser, and any project exports to a file you can back
+up or share.
 
 ## The mental model
 
@@ -107,15 +107,24 @@ npm run test:browser # drives the live app in headless Chromium (needs puppeteer
 
 ## Deployment
 
-`.github/workflows/deploy.yml` runs the core tests and publishes the repository to
-GitHub Pages on every push to `main` (and on demand). No build step. Enable Pages
-once under **Settings → Pages → Source: GitHub Actions**.
+The app is static (no build step), so GitHub Pages can serve it straight from the
+repository. Enable it once under **Settings → Pages → Build and deployment →
+Source: *Deploy from a branch* → Branch: `main` / `/ (root)`**. After that every
+push to `main` redeploys automatically; the committed `.nojekyll` tells Pages to
+publish the files as-is. The site root (`index.html`) loads `js/` and `css/`
+directly.
+
+> Prefer Actions-based deploys (e.g. to gate on tests)? Add a
+> `.github/workflows/deploy.yml` that runs `node test/core.test.js` and then
+> `actions/upload-pages-artifact` + `actions/deploy-pages`, and switch the Pages
+> source to *GitHub Actions*. (It isn't committed here because the automation
+> credential lacks the `workflow` scope to push workflow files.)
 
 ## Roadmap
 
-- More pattern types (worked in the round, worked flat).
-- Ghost connector lines and head-elongation driven by the origin/base graph.
-- Richer PDF layouts and multi-square blanket composition.
+Planned work lives in [`BACKLOG.md`](BACKLOG.md) — including stitch base modes
+(explicit / distanced / connected), generating a row from text notation, a
+double-click Edit mode, more pattern types, and richer PDF layouts.
 
 ## License
 
