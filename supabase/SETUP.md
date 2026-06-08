@@ -17,9 +17,19 @@ auth shell) doesn't read or write these yet — they're defined up front.
 ## 3. Configure Auth providers
 *Authentication → Providers / Sign In*:
 - **Google** — enable the native provider.
-- **Ravelry** — add a **custom OAuth2 provider**. Register an app at
-  <https://www.ravelry.com/pro/developer> and paste its client id/secret +
-  authorize/token/userinfo endpoints. The secret stays in Supabase.
+- **Ravelry** — add a **custom OAuth2 provider** (Manual configuration):
+  - Register an OAuth 2.0 app with a Ravelry **Pro** account at
+    <https://www.ravelry.com/pro/developer> to get a **client id + secret**.
+  - **Identifier:** `custom:ravelry` (must start with `custom:`; the app signs in
+    via `signInWithOAuth({ provider: 'custom:ravelry' })`).
+  - **Authorization URL:** `https://www.ravelry.com/oauth2/auth`
+  - **Token URL:** `https://www.ravelry.com/oauth2/token`
+  - **UserInfo URL:** `https://api.ravelry.com/current_user.json`
+  - **email_optional:** `true` — Ravelry doesn't expose an email via the API, so
+    allow sign-in without one (the backup-email flow covers recovery); map the
+    subject claim to the Ravelry user id.
+  - Copy the **Callback URL** Supabase shows into the Ravelry app's redirect URIs.
+    The client secret stays in Supabase.
 - **Email** — enable email + password and email OTP (magic link).
 - **Email confirmations** — enable *Confirm email* and *Secure email change* so a
   backup email added to a passkey/anonymous account must be confirmed before it
@@ -28,8 +38,9 @@ auth shell) doesn't read or write these yet — they're defined up front.
 - **Anonymous sign-ins** — **enable**. The passkey-first sign-up bootstraps an
   anonymous session before registering the passkey, then upgrades it with a
   backup email.
-- **Redirect URLs** — add the deployed Pages URL (under `/threadwick/`) and
-  `http://localhost:5173` for dev.
+- **Redirect URLs** — set **Site URL** to `https://threadwick.com/studio/` and add
+  `http://localhost:5173/studio/` (dev) to the allowlist, plus
+  `https://*.vercel.app/studio/` for preview deploys.
 
 ## 4. Provide the env vars
 **Local dev:** copy [`.env.example`](../.env.example) to `.env.local` and fill in:
@@ -38,18 +49,6 @@ VITE_SUPABASE_URL=...
 VITE_SUPABASE_ANON_KEY=...
 ```
 
-**CI / GitHub Pages:** add the two as repository **Variables** (Settings →
-Secrets and variables → Actions → *Variables*; they're public, so Variables not
-Secrets), then inject them into the build step of
-`.github/workflows/deploy.yml`. This workflow edit must be committed by a user
-with the `workflow` permission (it can't be pushed by the OAuth app):
-
-```yaml
-      - run: npm run build
-        env:
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
-```
-
-With the Variables unset the workflow still builds the local-only app, so it's
-safe to add the snippet before the Variables exist.
+**Production (Vercel):** add the two as **Environment Variables** in the Vercel
+project (Settings → Environment Variables, Production + Preview). With them unset
+Vercel still builds the local-only app, so it's safe to add them anytime.
