@@ -5,9 +5,16 @@ import type { Provider, Session } from '@supabase/supabase-js';
 import { supabase } from './client';
 
 export type { Session };
-// Google is a native Supabase provider; 'ravelry' is a Supabase *custom* OAuth
+// Google is a native Supabase provider; 'ravelry' is a Supabase *custom* OAuth2
 // provider configured in the dashboard, so it isn't in the built-in union.
 export type OAuthProvider = 'ravelry' | 'google';
+
+// Supabase provider ids. A custom OAuth provider's id must start with `custom:`
+// and match the identifier set in the dashboard (Auth → Providers → Manual).
+const PROVIDER_ID: Record<OAuthProvider, string> = {
+  ravelry: 'custom:ravelry',
+  google: 'google',
+};
 
 function client() {
   if (!supabase) throw new Error('Cloud is not configured.');
@@ -34,7 +41,7 @@ export function onAuthChange(cb: (session: Session | null) => void): () => void 
 
 export async function signInWithOAuth(provider: OAuthProvider): Promise<void> {
   const { error } = await client().auth.signInWithOAuth({
-    provider: provider as Provider,
+    provider: PROVIDER_ID[provider] as Provider,
     options: { redirectTo: redirectTo() },
   });
   if (error) throw error;
