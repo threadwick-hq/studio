@@ -20,8 +20,11 @@ _Nothing queued._
   logo in **Space Grotesk**, with "stitchgrid" **bold** and "studio" normal weight.
 - 🔲 **Genuine shadcn-style theme** — the current Ant Design theme doesn't read as
   shadcn; revisit tokens/components for a true shadcn look.
-- 🔲 **Ravelry integration** — consider linking / importing / exporting with
-  [Ravelry](https://www.ravelry.com).
+- 🔲 **Ravelry integration** — bi-directional sync with
+  [Ravelry](https://www.ravelry.com): the Pattern / Chart / Project model (Ravelry-parity
+  vocabulary), makes-as-assemblies with follow-mode progress, and account sync under a
+  studio + logbook split. Fully scoped — see
+  [`docs/ravelry-integration.md`](docs/ravelry-integration.md).
 
 ## Done
 
