@@ -1,13 +1,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Published to GitHub Pages via Actions (the workflow uploads dist/). A relative
-// base keeps assets working under the project-page subpath (/threadwick/).
+// Deployed to Vercel under https://threadwick.com/studio. An absolute `base`
+// makes every asset URL resolve under /studio/, and the build nests output in
+// dist/studio so the files physically match that path (Vercel serves dist/).
 export default defineConfig({
   plugins: [react()],
-  base: './',
+  base: '/studio/',
   build: {
-    outDir: 'dist',
+    outDir: 'dist/studio',
     emptyOutDir: true,
     sourcemap: false,
     // antd is ~900 kB minified on its own — a known, cache-stable vendor cost.
