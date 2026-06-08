@@ -158,7 +158,7 @@ export function ProjectView() {
               return (
                 <Card key={kind} size="small" className="res-col"
                   title={<span className="res-title"><meta.Icon /> {meta.title}{count > 0 && <span className="res-count">{count}</span>}</span>}
-                  extra={isDraft ? <Button size="small" icon={<PlusIcon />} onClick={() => openRes(kind, null)}>{meta.add}</Button> : null}>
+                  extra={isDraft ? <Button size="small" icon={<PlusIcon />} aria-label={`Add ${meta.add.toLowerCase()}`} title={`Add ${meta.add.toLowerCase()}`} onClick={() => openRes(kind, null)} /> : null}>
                   <ResourceList version={ver} kind={kind} readOnly={!isDraft} onEdit={(it) => openRes(kind, it)} onDelete={(id) => s.removeResource(prj.id, kind, id)} />
                 </Card>
               );
