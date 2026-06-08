@@ -5,6 +5,8 @@ import { theme } from './theme';
 import { App } from './App';
 import { store } from './core/store';
 import { sampleProject } from './core/sample';
+import '@fontsource/space-grotesk/400.css';
+import '@fontsource/space-grotesk/700.css';
 import './index.css';
 
 // First run: seed a worked sample so the app opens on something real.
