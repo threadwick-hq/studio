@@ -10,6 +10,7 @@ import {
   registerPasskey, addBackupEmail, sendMagicLink, signInWithPassword, signUpWithPassword,
   signOut, type Session, type OAuthProvider,
 } from './auth';
+import { takeOAuthError } from './oauthError';
 
 // The sign-in / account control in the top bar. Renders nothing when cloud is
 // disabled, so a build without Supabase env vars is exactly the local-only app.
@@ -36,6 +37,13 @@ function AuthControl() {
     const off = onAuthChange((s) => setSession(s));
     return () => { active = false; off(); };
   }, []);
+
+  // Surface an OAuth error the provider/Supabase appended to the callback URL,
+  // so a failed sign-in shows the real reason instead of silently signing out.
+  useEffect(() => {
+    const e = takeOAuthError();
+    if (e) message.error(`Sign-in failed: ${e}`);
+  }, [message]);
 
   // Run an async action with a busy flag and uniform error surfacing.
   const run = async (label: string, fn: () => Promise<void>): Promise<boolean> => {

@@ -24,7 +24,11 @@ auth shell) doesn't read or write these yet — they're defined up front.
     via `signInWithOAuth({ provider: 'custom:ravelry' })`).
   - **Authorization URL:** `https://www.ravelry.com/oauth2/auth`
   - **Token URL:** `https://www.ravelry.com/oauth2/token`
-  - **UserInfo URL:** `https://api.ravelry.com/current_user.json`
+  - **UserInfo URL:** `https://threadwick.com/api/ravelry-userinfo` — a proxy in
+    this repo (`api/ravelry-userinfo.ts`) that flattens Ravelry's
+    `current_user.json` to a top-level `sub`. Required to work around
+    supabase/auth#2519 ("missing provider id"), which drops nested/non-`sub`
+    userinfo fields; Ravelry's raw `current_user.json` does not work directly.
   - **email_optional:** `true` — Ravelry doesn't expose an email via the API, so
     allow sign-in without one (the backup-email flow covers recovery); map the
     subject claim to the Ravelry user id.
