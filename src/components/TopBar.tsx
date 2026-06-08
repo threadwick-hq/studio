@@ -15,8 +15,11 @@ export function TopBar({ children }: { children?: ReactNode }) {
   return (
     <header className="topbar">
       <div className="brand">
-        <Logo className="brand-mark" size={22} />
-        <span className="brand-name">threadwick <span className="brand-sub">studio</span></span>
+        <Logo className="brand-mark" size={34} />
+        <span className="brand-lockup">
+          <span className="brand-name">threadwick</span>
+          <span className="brand-sub">studio</span>
+        </span>
       </div>
       {children}
       {cloudEnabled && <Suspense fallback={null}><AuthMenu /></Suspense>}

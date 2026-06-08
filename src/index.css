@@ -30,9 +30,11 @@ kbd { font-size: 11px; background: var(--bg); border: 1px solid var(--line); bor
 
 /* ---- top bars ----------------------------------------------------------- */
 .topbar { display: flex; align-items: center; gap: 8px; padding: 11px 18px; border-bottom: 1px solid var(--line); background: var(--bg-2); }
-.brand { font-size: 19px; font-weight: 700; letter-spacing: -.01em; font-family: var(--logo); display: flex; align-items: center; gap: 7px; }
-.brand-mark { color: var(--accent); }
-.brand-sub { font-weight: 400; color: var(--muted); }
+.brand { display: flex; align-items: center; gap: 9px; letter-spacing: -.01em; }
+.brand-mark { color: var(--accent); display: block; }
+.brand-lockup { display: flex; flex-direction: column; }
+.brand-name { font-family: var(--logo); font-size: 20px; font-weight: 700; line-height: 1.05; color: var(--ink); }
+.brand-sub { font-family: Inter, system-ui, sans-serif; font-size: 12px; font-weight: 400; line-height: 1.1; color: var(--muted); }
 .badge { font-size: 11px; color: var(--accent); background: var(--accent-soft); border-radius: 20px; padding: 3px 10px; font-weight: 600; }
 
 /* ---- home / project pages ---------------------------------------------- */

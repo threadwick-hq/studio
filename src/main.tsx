@@ -8,6 +8,8 @@ import { cloudEnabled } from './cloud/config';
 import { sampleProject } from './core/sample';
 import '@fontsource/space-grotesk/latin-400.css';
 import '@fontsource/space-grotesk/latin-700.css';
+import '@fontsource/inter/latin-400.css';
+import '@fontsource/inter/latin-600.css';
 import './index.css';
 
 // First run: seed a worked sample so the app opens on something real.
