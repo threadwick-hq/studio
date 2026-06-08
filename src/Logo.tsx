@@ -1,7 +1,7 @@
 // The threadwick mark: Font Awesome Pro "swatchbook" (classic regular), used
-// under the project's Font Awesome Pro commercial license. Renders with
-// currentColor so it tints with the surrounding wordmark; the same path drives
-// the favicon (index.html).
+// under the project's Font Awesome Pro commercial license. Rendered as a white
+// glyph on a rounded badge; the badge uses currentColor so `.brand-mark` (the
+// accent) tints it. The same path + colours drive the favicon (index.html).
 //
 // Font Awesome Pro 7.2.0 by @fontawesome — https://fontawesome.com
 // License — https://fontawesome.com/license (Commercial License)
@@ -11,8 +11,9 @@ const PATH = 'M64 464C64 525.9 114.1 576 176 576L504 576C543.8 576 576 543.8 576
 export function Logo({ size = 22, className }: { size?: number; className?: string }) {
   return (
     <svg className={className} width={size} height={size} viewBox="0 0 640 640"
-      fill="currentColor" role="img" aria-label="threadwick">
-      <path d={PATH} />
+      role="img" aria-label="threadwick">
+      <rect width="640" height="640" rx="144" fill="currentColor" />
+      <path d={PATH} fill="#fff" />
     </svg>
   );
 }
