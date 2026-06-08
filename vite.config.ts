@@ -15,7 +15,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // split the big vendors into their own cache-stable chunks
-        manualChunks: { antd: ['antd'], icons: ['iconoir-react'] },
+        manualChunks: { antd: ['antd'], icons: ['iconoir-react'], supabase: ['@supabase/supabase-js'] },
       },
     },
   },

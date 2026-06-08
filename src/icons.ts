@@ -24,4 +24,10 @@ export {
   Link as LinkIcon,
   Notes as NotesIcon,
   Palette as VariationIcon,
+  LogIn as SignInIcon,
+  LogOut as SignOutIcon,
+  UserCircle as AccountIcon,
+  Fingerprint as PasskeyIcon,
+  Google as GoogleIcon,
+  Mail as MailIcon,
 } from 'iconoir-react';

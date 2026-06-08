@@ -1,5 +1,11 @@
+import { Suspense, lazy } from 'react';
 import type { ReactNode } from 'react';
 import { Logo } from '../Logo';
+import { cloudEnabled } from '../cloud/config';
+
+// Loaded lazily, and only when cloud is configured, so a build with no Supabase
+// env vars ships and fetches zero cloud code.
+const AuthMenu = lazy(() => import('../cloud/AuthMenu').then((m) => ({ default: m.AuthMenu })));
 
 // The persistent app top bar. The threadwick brand stays fixed in the top-left
 // on every page; each view passes its own controls as children, which render
@@ -13,6 +19,7 @@ export function TopBar({ children }: { children?: ReactNode }) {
         <span className="brand-name">threadwick <span className="brand-sub">studio</span></span>
       </div>
       {children}
+      {cloudEnabled && <Suspense fallback={null}><AuthMenu /></Suspense>}
     </header>
   );
 }

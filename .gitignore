@@ -4,3 +4,6 @@ dist/
 .DS_Store
 .tmp/
 _*.mjs
+.env
+.env.*
+!.env.example

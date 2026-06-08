@@ -26,6 +26,7 @@
   "license": "MIT",
   "dependencies": {
     "@fontsource/space-grotesk": "^5.2.10",
+    "@supabase/supabase-js": "^2.107.0",
     "antd": "^5.22.0",
     "iconoir-react": "^7.11.0",
     "qrcode": "^1.5.4",
