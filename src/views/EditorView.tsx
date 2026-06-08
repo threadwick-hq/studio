@@ -9,6 +9,7 @@ import {
 } from '../icons';
 import { useStore } from '../useStore';
 import { CanvasView } from '../editor/CanvasView';
+import { TopBar } from '../components/TopBar';
 import { Glyph } from '../components/Glyph';
 import { statusLabel } from '../components/versionStatus';
 import type { CanvasController, Mode } from '../core/editorCanvas';
@@ -92,7 +93,7 @@ export function EditorView() {
   const started = hasStart(pat);
   return (
     <div className={'editor' + (readOnly ? ' has-banner' : '')}>
-      <header className="topbar">
+      <TopBar>
         <Tooltip title="Back to project"><Button type="text" icon={<BackIcon />} onClick={() => s.backToProject()}><span className="back-label">{proj?.name ?? 'Project'}</span></Button></Tooltip>
         <Input variant="borderless" className="pat-name" value={pat.name} readOnly={readOnly} onChange={(e) => s.renamePattern(pat.id, e.target.value)} />
         <span className="badge">Granny square</span>
@@ -106,7 +107,7 @@ export function EditorView() {
         }}>
           <Button type="text" aria-label="Menu" icon={<MenuIcon />} />
         </Dropdown>
-      </header>
+      </TopBar>
 
       <div className="toolbar">
         <Segmented value={chrome.mode === 'insert' && readOnly ? 'select' : chrome.mode} onChange={(v) => ctrl.current?.setMode(v as Mode)}

@@ -8,6 +8,7 @@ import {
 } from '../icons';
 import type { ComponentType } from 'react';
 import { useStore } from '../useStore';
+import { TopBar } from '../components/TopBar';
 import { Thumb } from '../components/Thumb';
 import { VersionTag } from '../components/VersionTag';
 import { statusLabel } from '../components/versionStatus';
@@ -73,7 +74,7 @@ export function ProjectView() {
 
   return (
     <div className="home">
-      <header className="topbar">
+      <TopBar>
         <Button type="text" icon={<BackIcon />} onClick={() => s.goProjects()}>All projects</Button>
         <div className="grow" />
         <Button icon={<DownloadIcon />} onClick={() => exportProjectFile(prj)}>Export</Button>
@@ -82,7 +83,7 @@ export function ProjectView() {
           title: `Delete “${prj.name}”?`, content: 'Removes the project and all its patterns.',
           okText: 'Delete', okButtonProps: { danger: true }, onOk: () => s.deleteProject(prj.id),
         })}>Delete</Button>
-      </header>
+      </TopBar>
 
       <div className="page">
         <Input variant="borderless" className="proj-name" value={prj.name} onChange={(e) => s.renameProject(prj.id, e.target.value)} />
