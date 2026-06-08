@@ -9,12 +9,14 @@ import { supabase } from '../src/cloud/client';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-// The core safety guarantee of the auth-shell milestone: with no Supabase env
-// vars configured (the default, and today's production), cloud is entirely off —
-// no client, nothing to read or write the local library.
-test('cloud is OFF by default — local-only app is unchanged', () => {
-  assert.equal(cloudEnabled, false);
-  assert.equal(supabase, null);
+// Cloud is strictly env-gated: the flag mirrors the presence of the Supabase env
+// vars, and the client exists only when the flag is on. With no env (local/CI)
+// that means cloud is OFF and the app is the unchanged local-only studio; with
+// env set (e.g. the Vercel build) it's ON. The invariant holds either way.
+test('cloud flag mirrors env, and the client matches the flag', () => {
+  const hasEnv = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
+  assert.equal(cloudEnabled, hasEnv);
+  assert.equal(supabase === null, !hasEnv);
 });
 
 test('uid: prefixed, uuid-shaped', () => {
