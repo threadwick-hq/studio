@@ -13,7 +13,9 @@ export function Logo({ size = 22, className }: { size?: number; className?: stri
     <svg className={className} width={size} height={size} viewBox="0 0 640 640"
       role="img" aria-label="threadwick">
       <rect width="640" height="640" rx="144" fill="currentColor" />
-      <path d={PATH} fill="#fff" />
+      <g transform="translate(320 320) scale(.66) translate(-320 -320)">
+        <path d={PATH} fill="#fff" />
+      </g>
     </svg>
   );
 }
