@@ -8,7 +8,10 @@ import { Logo } from '../Logo';
 export function TopBar({ children }: { children?: ReactNode }) {
   return (
     <header className="topbar">
-      <div className="brand"><Logo className="brand-mark" size={22} /> threadwick <span className="brand-sub">studio</span></div>
+      <div className="brand">
+        <Logo className="brand-mark" size={22} />
+        <span className="brand-name">threadwick <span className="brand-sub">studio</span></span>
+      </div>
       {children}
     </header>
   );
