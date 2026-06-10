@@ -117,11 +117,12 @@ span.crumb-name { padding: 3px 6px; white-space: nowrap; max-width: 260px; overf
 .editor.has-banner { grid-template-rows: auto auto 1fr; }
 
 /* The editable pattern title sizes itself to its text: a hidden ::after twin
-   (same font + padding) spans the grid cell the input sits in. Hovering
+   (same font + padding) sizes the wrapper, and the input overlays it
+   absolutely — so the input's intrinsic width can't inflate the box. Hovering
    reveals the "hidden input" affordance. */
-.pat-name-wrap { display: inline-grid; align-items: center; font-family: var(--serif); font-size: 16px; font-weight: 700; min-width: 56px; max-width: 340px; }
-.pat-name-wrap::after { content: attr(data-value) ' '; visibility: hidden; white-space: pre; grid-area: 1 / 1; padding: 2px 7px; }
-.pat-name-wrap .ant-input.pat-name { grid-area: 1 / 1; width: 100%; font: inherit; padding: 2px 7px; border-radius: 6px; transition: background .12s, box-shadow .12s; }
+.pat-name-wrap { position: relative; display: inline-block; font-family: var(--serif); font-size: 16px; font-weight: 700; line-height: 1.5; min-width: 56px; max-width: 340px; }
+.pat-name-wrap::after { content: attr(data-value) ' '; visibility: hidden; white-space: pre; display: block; overflow: hidden; padding: 2px 7px; }
+.pat-name-wrap .ant-input.pat-name { position: absolute; inset: 0; width: 100%; height: 100%; font: inherit; line-height: inherit; padding: 2px 7px; border-radius: 6px; transition: background .12s, box-shadow .12s; }
 .pat-name-wrap:hover .ant-input.pat-name:not(:focus):not([readonly]) { background: rgba(40, 30, 20, .05); box-shadow: inset 0 0 0 1px var(--line); }
 .pat-name-wrap .ant-input.pat-name:focus { background: #fff; box-shadow: inset 0 0 0 1px var(--accent); }
 .seg-icon { display: flex; align-items: center; padding: 3px 5px; }
