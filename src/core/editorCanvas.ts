@@ -422,6 +422,8 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
     getNextStitchId: () => { const n = nextStitch(); return n ? n.id : null; },
     resetInsert() { resetInsert(); scheduleRender(); },
     escape() {
+      // Select is the resting mode: Esc steps any other mode back toward it.
+      if (mode === 'pan') { this.setMode('select'); return true; }
       if (mode !== 'insert') return false;
       if (phase === 'head') { phase = 'base'; pendingBase = null; onChange(); drawCursor(lastU); return true; }
       this.setMode('select');
