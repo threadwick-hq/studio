@@ -127,9 +127,18 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
     const pp = pat();
     if (pp && !hasStart(pp)) out += emptyHintMarkup();
     out += '<g class="stitches">';
+    // Bucket stitches by opacity tier and apply the opacity ONCE per bucket:
+    // group opacity composites the tier as a whole, so overlapping dimmed
+    // stitches don't stack alpha (and darken) at their intersections. Dimmer
+    // tiers paint first, so full-opacity stitches stay on top.
+    const tiers = new Map<number, string>();
     for (const st of stitches()) {
       const sty = sm.get(st.id) || {};
-      out += stitchToSVG(st, { interactive: true, color: sty.color, opacity: sty.opacity });
+      const op = sty.opacity ?? 1;
+      tiers.set(op, (tiers.get(op) || '') + stitchToSVG(st, { interactive: true, color: sty.color }));
+    }
+    for (const op of [...tiers.keys()].sort((a, b) => a - b)) {
+      out += op < 1 ? `<g opacity="${op}">${tiers.get(op)!}</g>` : tiers.get(op)!;
     }
     out += '</g>';
     out += selectionMarkup();
