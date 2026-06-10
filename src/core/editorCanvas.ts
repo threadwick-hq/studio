@@ -4,6 +4,7 @@
 // one-click chains that flow off the origin). React mounts it via a ref.
 
 import { clamp, round } from './util';
+import { rotatePoint } from './geometry';
 import { buildStitchShapes, shapesMarkup, stitchToSVG, topOfStitch, contentBounds } from './render';
 import { INK, GHOST, ORIGIN, SPACE, NEXT, SELECT } from './colors';
 import {
@@ -44,6 +45,9 @@ export interface CanvasController {
 interface View { scale: number; panX: number; panY: number; }
 interface Drag { leadId: string; ox: number; oy: number; startU: Point; moved: boolean; shift: boolean; }
 interface Marquee { startU: Point; cur: Point; additive: boolean; base: Set<string>; moved: boolean; }
+// Dragging a selected stitch's head/base dot moves that endpoint only; the
+// head captured at gesture start stays the pin for base drags (no drift).
+interface EndpointDrag { id: string; which: 'head' | 'base'; startU: Point; headAtStart: Point; moved: boolean; }
 
 // Point indicators (heads, bases, spaces) are points: simple filled dots, no
 // tinted halo or outline ring.
@@ -69,12 +73,14 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
   let pendingBase: BaseHit | null = null;
 
   let drag: Drag | null = null, panning: { x: number; y: number } | null = null, marquee: Marquee | null = null, spaceDown = false;
+  let endpointDrag: EndpointDrag | null = null;
   let lastU: Point = { x: 0, y: 0 };
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
 
   const pat = () => store.currentPattern();
   const stitches = (): Stitch[] => { const p = pat(); return p ? p.stitches : []; };
   const activeRound = (): string => { const p = pat(); return p ? p.activeRound : ''; };
+  const editable = (): boolean => store.currentVersion()?.status === 'draft';
 
   const rect = () => svg.getBoundingClientRect();
   function toUser(cx: number, cy: number): Point {
@@ -166,16 +172,31 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
     const sel = store.selection;
     if (!sel.size) return '';
     const byId = store.byIdMap();
+    const canEdit = editable();
     let out = '<g pointer-events="none">';
+    let handles = '';
     for (const st of stitches()) {
       if (!sel.has(st.id)) continue;
       const head = topOfStitch(st);
-      out += mark({ x: st.x, y: st.y }, SPACE, 3.4);
-      out += mark(head, SELECT, 3.4);
       const origin = st.origin ? byId.get(st.origin) : undefined;
       if (origin) out += link(topOfStitch(origin), { x: st.x, y: st.y }, ORIGIN);
+      if (canEdit && !isStart(st.type) && st.type !== 'slst') {
+        // the base/head dots double as drag handles (a slip stitch is a single
+        // point — head, base and body coincide — so it only moves as a whole)
+        handles += handle(st.id, 'base', { x: st.x, y: st.y }, SPACE);
+        handles += handle(st.id, 'head', head, SELECT);
+      } else {
+        out += mark({ x: st.x, y: st.y }, SPACE, 3.4);
+        out += mark(head, SELECT, 3.4);
+      }
     }
-    return out + '</g>';
+    out += '</g>';
+    return out + (handles ? `<g class="handles">${handles}</g>` : '');
+  }
+  function handle(id: string, which: 'head' | 'base', pt: Point, color: string): string {
+    return `<g class="handle" data-id="${id}" data-handle="${which}">`
+      + `<circle cx="${round(pt.x)}" cy="${round(pt.y)}" r="9" fill="transparent" pointer-events="all"/>`
+      + mark(pt, color, 3.4) + '</g>';
   }
 
   function clearCursor(): void { cursorLayer.innerHTML = ''; }
@@ -295,7 +316,35 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
     onChange(); drawCursor(u);
   }
 
+  // Geometry for dragging a head/base handle. A head drag pins the base (length
+  // and rotation follow the cursor); a base drag pins the head. Chains are
+  // fixed-size, so EITHER handle rotates them — around the pinned base (head
+  // handle) or the pinned head (base handle); only a body drag translates one.
+  function endpointPatch(st: Stitch, which: 'head' | 'base', head0: Point, u: Point): { x?: number; y?: number; rot?: number; len?: number } {
+    const aim = (x0: number, y0: number, x1: number, y1: number) => (Math.atan2(x1 - x0, -(y1 - y0)) * 180) / Math.PI;
+    if (st.type === 'ch') {
+      if (which === 'head') return { rot: aim(st.x, st.y, u.x, u.y) };
+      const rot = aim(u.x, u.y, head0.x, head0.y);
+      const built = buildStitchShapes('ch');
+      const lh = built.head ?? { x: 0, y: -built.height };
+      const off = rotatePoint(lh.x, lh.y, rot);
+      return { rot, x: head0.x - off.x, y: head0.y - off.y };
+    }
+    if (which === 'head') return { len: Math.max(2, Math.hypot(u.x - st.x, u.y - st.y)), rot: aim(st.x, st.y, u.x, u.y) };
+    return { x: u.x, y: u.y, len: Math.max(2, Math.hypot(head0.x - u.x, head0.y - u.y)), rot: aim(u.x, u.y, head0.x, head0.y) };
+  }
+
   function selectDown(e: PointerEvent, u: Point): void {
+    const hb = (e.target as Element).closest('[data-handle]');
+    if (hb) {
+      const id = hb.getAttribute('data-id')!;
+      const st = store.byIdMap().get(id);
+      if (st) {
+        endpointDrag = { id, which: hb.getAttribute('data-handle') as 'head' | 'base', startU: u, headAtStart: topOfStitch(st), moved: false };
+        svg.setPointerCapture(e.pointerId);
+        return;
+      }
+    }
     const hit = (e.target as Element).closest('[data-id]');
     if (hit) {
       const id = hit.getAttribute('data-id')!;
@@ -315,7 +364,7 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
   function startPan(e: PointerEvent): void { panning = { x: e.clientX, y: e.clientY }; svg.setPointerCapture(e.pointerId); applyCursor(); }
 
   function onMove(e: PointerEvent): void {
-    if ((drag || panning || marquee) && e.buttons === 0) { endGesture(e); return; }
+    if ((drag || panning || marquee || endpointDrag) && e.buttons === 0) { endGesture(e); return; }
     const u = toUser(e.clientX, e.clientY);
     if (panning) {
       view.panX -= (e.clientX - panning.x) / view.scale;
@@ -334,6 +383,17 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
       for (const st of stitches()) if (!isStart(st.type) && stitchWithinRect(st, x0, y0, x1, y1)) ids.add(st.id);
       store.setSelection([...ids]); return;
     }
+    if (endpointDrag) {
+      const st = store.byIdMap().get(endpointDrag.id);
+      if (!st) { endpointDrag = null; return; }
+      if (!endpointDrag.moved) {
+        if (Math.hypot(u.x - endpointDrag.startU.x, u.y - endpointDrag.startU.y) * view.scale < 3) return;
+        endpointDrag.moved = true; store.dragBegin();
+      }
+      store.adjustStitch(st.id, endpointPatch(st, endpointDrag.which, endpointDrag.headAtStart, u));
+      scheduleRender();
+      return;
+    }
     if (drag) {
       if (!drag.moved) {
         if (Math.hypot(u.x - drag.startU.x, u.y - drag.startU.y) * view.scale < 3) return;
@@ -348,11 +408,11 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
   }
 
   function endGesture(e: PointerEvent): void {
-    const wasDrag = !!(drag && drag.moved);
+    const wasDrag = !!(drag && drag.moved) || !!(endpointDrag && endpointDrag.moved);
     if (drag && !drag.moved && !drag.shift) store.setSelection([drag.leadId]);
     if (marquee && !marquee.moved && !marquee.additive) store.clearSelection();
     if (marquee || drag) clearCursor();
-    panning = null; drag = null; marquee = null;
+    panning = null; drag = null; marquee = null; endpointDrag = null;
     try { svg.releasePointerCapture(e.pointerId); } catch { /* not captured */ }
     if (wasDrag) store.commitGesture(); // one React/autosave flush after a move-drag
     drawCursor(toUser(e.clientX, e.clientY));

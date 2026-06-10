@@ -424,6 +424,25 @@ class Store {
   }
   commitGesture(): void { this.emit(); }
 
+  // One stitch's geometry during a head/base handle drag. Same contract as
+  // dragBy: lazy snapshot via dragBegin(), no emit until commitGesture(). Any
+  // manual endpoint adjustment de-automates a chain, like moving one does.
+  adjustStitch(id: string, patch: { x?: number; y?: number; rot?: number; len?: number }): void {
+    if (!this.isDraftActive()) return;
+    const pat = this.currentPattern();
+    if (!pat) return;
+    const s = pat.stitches.find((x) => x.id === id);
+    if (!s) return;
+    if (!this.dragSnapped) { this.pushHistory(pat); this.dragSnapped = true; }
+    if (patch.x !== undefined) s.x = patch.x;
+    if (patch.y !== undefined) s.y = patch.y;
+    if (patch.rot !== undefined) s.rot = patch.rot;
+    if (patch.len !== undefined) s.len = patch.len;
+    if (s.type === 'ch') s.auto = false;
+    autoLayoutChains(pat);
+    pat.updatedAt = nowISO();
+  }
+
   // A continuous control (e.g. the length slider) coalesces into a single undo
   // entry: it snapshots once, then emits live so the canvas updates as you drag.
   // endLive() resets so the next gesture starts a fresh history entry.

@@ -68,7 +68,12 @@ export function stitchToSVG(st: Stitch, opts: StitchSVGOpts = {}): string {
   const tf = `translate(${round(st.x)} ${round(st.y)}) rotate(${round(st.rot || 0)})${mirror}`;
   const op = opts.opacity != null ? ` opacity="${opts.opacity}"` : '';
   if (!opts.interactive) return `<g transform="${tf}"${op}>${inner}</g>`;
-  const hit = height > 4
+  // A chain's body is its oval: hit-test the filled oval (slightly inflated)
+  // so clicking anywhere inside it grabs the chain.
+  const oval = st.type === 'ch' ? shapes.find((s) => s.k === 'ellipse') : undefined;
+  const hit = oval && oval.k === 'ellipse'
+    ? `<ellipse class="hit" cx="${round(oval.cx)}" cy="${round(oval.cy)}" rx="${round(oval.rx + 4)}" ry="${round(oval.ry + 3)}" fill="transparent" pointer-events="all"/>`
+    : height > 4
     ? `<rect class="hit" x="-9" y="${round(-height - 7)}" width="18" height="${round(height + 14)}" rx="9" fill="transparent" pointer-events="all"/>`
     : `<circle class="hit" cx="0" cy="0" r="13" fill="transparent" pointer-events="all"/>`;
   const cls = 'stitch' + (opts.klass ? ' ' + opts.klass : '');
