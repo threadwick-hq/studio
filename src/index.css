@@ -165,6 +165,7 @@ kbd { font-size: 11px; background: var(--bg); border: 1px solid var(--line); bor
 .export-form .field > span { font-weight: 500; color: var(--ink); }
 .export-form .field.check { flex-direction: row; align-items: center; gap: 9px; color: var(--ink); }
 .insp-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.type-opt { display: inline-flex; align-items: center; gap: 7px; }
 .legend { display: flex; flex-direction: column; gap: 6px; }
 .legend-row { display: flex; align-items: center; gap: 9px; font-size: 13px; }
 .legend-row .glyph-wrap { flex: 0 0 auto; }

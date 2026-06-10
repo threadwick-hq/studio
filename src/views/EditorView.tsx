@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  App, Alert, Button, Segmented, Select, Slider, Switch, ColorPicker, Dropdown, Modal, Input, Tooltip, Typography,
+  App, Alert, Button, Segmented, Select, InputNumber, Switch, ColorPicker, Dropdown, Modal, Input, Tooltip, Typography,
 } from 'antd';
 import {
   BackIcon, UndoIcon, RedoIcon, DownloadIcon, HelpIcon, MenuIcon,
   PlusIcon, ZoomInIcon, ZoomOutIcon, FitIcon, MoreIcon, DeleteIcon,
   EditIcon, RotateLeftIcon, RotateRightIcon, OriginIcon,
-  SelectModeIcon, InsertModeIcon, PanModeIcon,
+  SelectModeIcon, InsertModeIcon, PanModeIcon, MirrorIcon,
 } from '../icons';
 import { useStore } from '../useStore';
 import { CanvasView } from '../editor/CanvasView';
@@ -274,7 +274,10 @@ function Inspector({ pat, ctrl, readOnly }: { pat: import('../core/types').Patte
       <label className="field"><span>Type</span>
         <Select size="small" disabled={readOnly} value={sameType ? first.type : undefined} placeholder="(mixed)" style={{ width: '100%' }}
           onChange={(v) => s.updateSelection({ type: v })}
-          options={STITCH_ORDER.map((t) => ({ value: t, label: STITCHES[t].name }))} />
+          options={STITCH_ORDER.map((t) => ({
+            value: t,
+            label: <span className="type-opt"><Glyph type={t} size={16} /> {STITCHES[t].name}</span>,
+          }))} />
       </label>
       <label className="field"><span>Colour</span>
         <ColorPicker value={first.color || INK} disabled={readOnly} onChangeComplete={(c) => s.updateSelection({ color: c.toHexString() })}
@@ -282,8 +285,9 @@ function Inspector({ pat, ctrl, readOnly }: { pat: import('../core/types').Patte
       </label>
       {post && (
         <label className="field"><span>Length</span>
-          <Slider min={10} max={70} disabled={readOnly} value={Math.round(first.len ?? defaultLen(first.type))}
-            onChange={(v) => s.liveUpdateSelection({ len: v })} onChangeComplete={() => s.endLive()} />
+          <InputNumber size="small" min={10} max={70} disabled={readOnly} style={{ width: '100%' }}
+            value={Math.round(first.len ?? defaultLen(first.type))}
+            onChange={(v) => { if (typeof v === 'number') s.updateSelection({ len: v }); }} />
         </label>
       )}
       {chains.length > 0 && (
@@ -291,12 +295,10 @@ function Inspector({ pat, ctrl, readOnly }: { pat: import('../core/types').Patte
           <Switch size="small" disabled={readOnly} checked={allAuto} onChange={(v) => s.setChainAuto(v)} />
         </label>
       )}
-      <label className="field row"><span>Mirror</span>
-        <Switch size="small" disabled={readOnly} checked={first.mirror} onChange={(v) => s.updateSelection({ mirror: v })} />
-      </label>
       {!readOnly && <div className="insp-acts">
         <Tooltip title="Rotate −15°"><Button size="small" icon={<RotateLeftIcon />} onClick={() => s.rotateSelectionBy(-15)} /></Tooltip>
         <Tooltip title="Rotate +15°"><Button size="small" icon={<RotateRightIcon />} onClick={() => s.rotateSelectionBy(15)} /></Tooltip>
+        <Tooltip title="Flip the selection horizontally"><Button size="small" icon={<MirrorIcon />} onClick={() => s.mirrorSelection()}>Mirror</Button></Tooltip>
         {items.length === 1 && <Button size="small" icon={<OriginIcon />} onClick={() => { ctrl.current?.setMode('insert'); ctrl.current?.setOrigin(first.id); }}>Set as origin</Button>}
         <Button size="small" danger icon={<DeleteIcon />} onClick={() => s.deleteSelection()}>Delete</Button>
       </div>}

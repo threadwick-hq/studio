@@ -483,6 +483,12 @@ class Store {
     if (!this.selection.size) return;
     this.editTransact((pat) => { for (const s of pat.stitches) if (this.selection.has(s.id)) s.rot = (s.rot || 0) + deg; });
   }
+  // Mirroring is an action, not a state control: each selected stitch flips its
+  // own mirror flag, so mixed selections behave sensibly (like rotate does).
+  mirrorSelection(): void {
+    if (!this.selection.size) return;
+    this.editTransact((pat) => { for (const s of pat.stitches) if (this.selection.has(s.id)) s.mirror = !s.mirror; });
+  }
 
   deleteSelection(): void { if (this.selection.size) this.removeStitches([...this.selection]); }
   removeStitches(ids: string[]): void {

@@ -21,6 +21,7 @@ export {
   EditPencil as EditIcon,
   RotateCameraLeft as RotateLeftIcon,
   RotateCameraRight as RotateRightIcon,
+  Flip as MirrorIcon,
   Position as OriginIcon,
   Menu as MenuIcon,
   DropletHalf as YarnIcon,

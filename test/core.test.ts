@@ -280,6 +280,32 @@ test('store: pattern type guard + resources', () => {
   store.removeResource(pid, 'yarns', yid);
   assert.equal(activeVersion(store.getProject(pid)!).resources.yarns.length, 0);
 });
+test('store: mirrorSelection flips each stitch individually, one undo entry', () => {
+  const pid = store.createProject('MI');
+  const patId = store.createPattern(pid, 'Sq')!;
+  store.openPattern(pid, patId);
+  const pat = () => store.currentPattern()!;
+  const ringId = store.setStart('mr')!;
+  const a = store.placeStitch({ type: 'dc', base: { kind: 'stitch', id: ringId }, x: 0, y: 0, rot: 0, len: 30, originId: ringId })!;
+  const b = store.placeStitch({ type: 'dc', base: { kind: 'stitch', id: ringId }, x: 10, y: 0, rot: 0, len: 30, originId: a })!;
+  const of = (id: string) => pat().stitches.find((s) => s.id === id)!;
+  store.updateSelection({}); // no-op on empty selection
+  store.setSelection([a]);
+  store.mirrorSelection();
+  assert.equal(of(a).mirror, true);
+
+  // mixed selection: each flips its own state
+  store.setSelection([a, b]);
+  const before = store.undoStack.length;
+  store.mirrorSelection();
+  assert.equal(store.undoStack.length, before + 1);
+  assert.equal(of(a).mirror, false);
+  assert.equal(of(b).mirror, true);
+  store.undo();
+  assert.equal(of(a).mirror, true);
+  assert.equal(of(b).mirror, false);
+});
+
 test('store: evenRound fans stitches to equal radius', () => {
   const pid = store.createProject('E');
   const patId = store.createPattern(pid, 'Sq')!;
