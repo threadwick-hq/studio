@@ -7,7 +7,7 @@ import { STITCHES, isRealStitch, isStart, defaultLen } from '../src/core/symbols
 import { topOfStitch, contentBounds, chartToSVG, buildStitchShapes } from '../src/core/render';
 import {
   chainOrder, spacesForRound, pickBase, successorInRound, chainFrom,
-  defaultOriginId, basePoint,
+  defaultOriginId, basePoint, stitchWithinRect,
 } from '../src/core/connectivity';
 import { newProject, newPattern, normalizeProject, projectToFile, projectFromFile, startRowId, activeVersion, publishedVersion, draftVersion } from '../src/core/model';
 import { store } from '../src/core/store';
@@ -95,6 +95,13 @@ test('defaultOriginId = tail of round, else previous round tail', () => {
   assert.equal(defaultOriginId(s, rounds, 'R1'), 'b');
   assert.equal(defaultOriginId(s, rounds, 'R2'), 'b');
 });
+test('stitchWithinRect needs head AND base inside', () => {
+  const st = dc('a', 'R', null, 0, 0); // base (0,0), head (0,-30)
+  assert.equal(stitchWithinRect(st, -10, -40, 10, 10), true);
+  assert.equal(stitchWithinRect(st, -10, -10, 10, 10), false, 'head outside');
+  assert.equal(stitchWithinRect(st, -10, -40, 10, -5), false, 'base outside');
+});
+
 test('basePoint resolves stitch + space', () => {
   const s = [dc('a', 'R', null, 0, -30), dc('b', 'R', 'a', 40, -30)];
   const byId = new Map(s.map((x) => [x.id, x]));

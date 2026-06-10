@@ -8,7 +8,7 @@ import { buildStitchShapes, shapesMarkup, stitchToSVG, topOfStitch, contentBound
 import { INK, GHOST, ORIGIN, SPACE, NEXT, SELECT } from './colors';
 import {
   pickBase, basePoint, nearestStitch, spacesForRound, successorInRound,
-  chainFrom, defaultOriginId,
+  chainFrom, defaultOriginId, stitchWithinRect,
 } from './connectivity';
 import { isStart } from './symbols';
 import { hasStart, isStartRow } from './model';
@@ -43,7 +43,7 @@ export interface CanvasController {
 
 interface View { scale: number; panX: number; panY: number; }
 interface Drag { leadId: string; ox: number; oy: number; startU: Point; moved: boolean; shift: boolean; }
-interface Marquee { startU: Point; additive: boolean; base: Set<string>; moved: boolean; }
+interface Marquee { startU: Point; cur: Point; additive: boolean; base: Set<string>; moved: boolean; }
 
 function mark(pt: Point, color: string, r = 4): string {
   return `<circle cx="${round(pt.x)}" cy="${round(pt.y)}" r="${r}" fill="${color}" fill-opacity="0.35" stroke="${color}" stroke-width="1.6"/>`;
@@ -208,9 +208,20 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
     return out;
   }
 
+  // The marquee window pane. Drawn from drawCursor too, so the re-renders that
+  // selection changes trigger mid-gesture can't wipe it off the cursor layer.
+  function marqueeMarkup(): string {
+    if (!marquee) return '';
+    const { startU: a, cur: b } = marquee;
+    const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);
+    const w = Math.abs(b.x - a.x), h = Math.abs(b.y - a.y);
+    return `<rect x="${round(x)}" y="${round(y)}" width="${round(w)}" height="${round(h)}" fill="${GHOST}" fill-opacity="0.08" stroke="${GHOST}" stroke-width="1.2" stroke-dasharray="4 3"/>`;
+  }
+
   function drawCursor(u: Point): void {
     lastU = u;
-    if (mode !== 'insert' || drag || marquee || panning) { clearCursor(); return; }
+    if (marquee) { cursorLayer.innerHTML = marqueeMarkup(); return; }
+    if (mode !== 'insert' || drag || panning) { clearCursor(); return; }
     const p = pat();
     if (!p || isStartRow(p, p.activeRound) || !hasStart(p)) { clearCursor(); return; }
     const og = originGlyph();
@@ -298,7 +309,7 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
       drag = { leadId: id, ox: u.x - lead.x, oy: u.y - lead.y, startU: u, moved: false, shift: e.shiftKey };
       svg.setPointerCapture(e.pointerId);
     } else {
-      marquee = { startU: u, additive: e.shiftKey, base: e.shiftKey ? new Set(store.selection) : new Set(), moved: false };
+      marquee = { startU: u, cur: u, additive: e.shiftKey, base: e.shiftKey ? new Set(store.selection) : new Set(), moved: false };
       svg.setPointerCapture(e.pointerId);
     }
   }
@@ -316,11 +327,13 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
     }
     if (marquee) {
       marquee.moved = true;
+      marquee.cur = u;
+      cursorLayer.innerHTML = marqueeMarkup();
       const x0 = Math.min(marquee.startU.x, u.x), y0 = Math.min(marquee.startU.y, u.y);
-      const w = Math.abs(u.x - marquee.startU.x), h = Math.abs(u.y - marquee.startU.y);
-      cursorLayer.innerHTML = `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="${GHOST}" fill-opacity="0.08" stroke="${GHOST}" stroke-width="1.2" stroke-dasharray="4 3"/>`;
+      const x1 = Math.max(marquee.startU.x, u.x), y1 = Math.max(marquee.startU.y, u.y);
       const ids = new Set(marquee.base);
-      for (const st of stitches()) if (!isStart(st.type) && st.x >= x0 && st.x <= x0 + w && st.y >= y0 && st.y <= y0 + h) ids.add(st.id);
+      // window-pane selection: only stitches FULLY inside (head + base) make it
+      for (const st of stitches()) if (!isStart(st.type) && stitchWithinRect(st, x0, y0, x1, y1)) ids.add(st.id);
       store.setSelection([...ids]); return;
     }
     if (drag) {

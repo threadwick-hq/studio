@@ -87,6 +87,13 @@ export function pickBase(stitches: Stitch[], x: number, y: number, opts: { maxD?
   return best;
 }
 
+// True only when the whole stitch sits inside the rect: window-pane selection
+// takes no partials, so both the base anchor and the head must be within limits.
+export function stitchWithinRect(st: Stitch, x0: number, y0: number, x1: number, y1: number): boolean {
+  const inside = (p: Point) => p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1;
+  return inside({ x: st.x, y: st.y }) && inside(topOfStitch(st));
+}
+
 export function nearestStitch(stitches: Stitch[], x: number, y: number, maxD = Infinity): Stitch | null {
   let best: Stitch | null = null, bd = maxD;
   for (const s of stitches) {
