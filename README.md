@@ -9,9 +9,9 @@ stitches one at a time: each stitch *comes out of* the previous one and is
 *worked into* a stitch or a space, exactly like real crochet. Even, readable
 charts fall out of that structure instead of out of calculation.
 
-**Live app:** served from GitHub Pages — just visit the link, no install.
-Everything saves to your browser, and any project exports to a file you can back
-up or share.
+**Live app:** [threadwick.com/studio](https://threadwick.com/studio) — just
+visit, no install. Everything saves to your browser, and any project exports to
+a file you can back up or share.
 
 ## The mental model
 
@@ -79,7 +79,7 @@ patterns are still viewable. (A dedicated, richer view mode is planned.)
 ```bash
 npm install
 npm run dev        # Vite dev server (http://localhost:5173)
-npm run build      # type-check + production build into docs/
+npm run build      # type-check + lint + production build into dist/studio/
 npm run preview    # serve the production build (http://localhost:8080)
 ```
 
@@ -147,7 +147,7 @@ src/                React + Ant Design UI
   components/ Glyph Thumb
   editor/CanvasView.tsx        mounts the canvas controller into React
   views/ ProjectsView ProjectView EditorView
-docs/             the built site (committed; served by GitHub Pages)
+api/              Vercel serverless functions (Ravelry userinfo proxy)
 ```
 
 ## Testing
@@ -159,39 +159,23 @@ npm run typecheck # strict tsc --noEmit
 
 ## Deployment
 
-The app is built with Vite into `dist/` (git-ignored, `base: './'`) and published
-to GitHub Pages by a workflow (`.github/workflows/deploy.yml`) that runs on every
-push to `main`: it builds, runs the tests, and deploys `dist/`. Enable it once
-under **Settings → Pages → Build and deployment → Source: *GitHub Actions***.
+The app deploys to **Vercel** as the `threadwick-studio` project, mounted at
+**`threadwick.com/studio`** through a
+[Vercel Microfrontends](https://vercel.com/docs/microfrontends) group:
+`threadwick-home` (a separate repo) is the default app that owns the domain and
+serves `/`, and its `microfrontends.json` routes `/studio` and `/studio/:path*`
+to this project.
 
-```yaml
-name: Deploy to GitHub Pages
-on:
-  push: { branches: [main] }
-  workflow_dispatch:
-permissions: { contents: read, pages: write, id-token: write }
-concurrency: { group: pages, cancel-in-progress: true }
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'npm' }
-      - run: npm ci
-      - run: npm test
-      - run: npm run build
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with: { path: dist }
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment: { name: github-pages, url: '${{ steps.deployment.outputs.page_url }}' }
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
-```
+Two pieces of config make the `/studio` mount work — keep them in sync:
+
+- [`vite.config.ts`](vite.config.ts) sets `base: '/studio/'` (every asset URL
+  resolves under `/studio/`) and `build.outDir: 'dist/studio'` (the files
+  physically nest under `/studio/`, since Vercel serves `dist/`).
+- [`vercel.json`](vercel.json) sets `outputDirectory: dist`, rewrites bare
+  `/studio` to `/studio/index.html`, and redirects `/` to `/studio/` for visits
+  on the project's own Vercel domain.
+
+Pushes to `main` deploy to production; other branches get preview deployments.
 
 ## Roadmap
 
