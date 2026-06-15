@@ -22,9 +22,10 @@ html, body, #root { height: 100%; margin: 0; }
 body { background: var(--bg); color: var(--ink); font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
 .grow { flex: 1; }
 /* View enter transition: .app-view is keyed by route in App, so navigating
-   remounts the content and replays this — the persistent header never moves. */
-@keyframes viewIn { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
-.app-view { animation: viewIn .24s cubic-bezier(.2, .7, .3, 1) both; }
+   remounts the content and replays this — the persistent header never moves.
+   A clear (but quick) rise + fade so the change of view is noticeable. */
+@keyframes viewIn { from { opacity: 0; transform: translateY(14px) scale(.992); } to { opacity: 1; transform: none; } }
+.app-view { animation: viewIn .34s cubic-bezier(.2, .7, .3, 1) both; }
 @media (prefers-reduced-motion: reduce) { .app-view, .chip, .howto-body, .howto-chevron { animation: none; transition: none; } }
 .muted { color: var(--muted); }
 .small { font-size: 12px; }
@@ -88,9 +89,12 @@ span.crumb-name { padding: 2px 6px; white-space: nowrap; max-width: 260px; overf
 
 /* same self-sizing + hover-reveals-input treatment as the pattern title;
    -8px margin keeps the text flush with the description below */
-.proj-name-wrap { position: relative; display: inline-block; align-self: flex-start; margin-left: -8px; font-family: var(--serif); font-size: 28px; font-weight: 800; line-height: 1.35; min-width: 90px; max-width: 100%; }
+/* block + fit-content (not inline-block) so the title is its own box with no
+   baseline descender gap below it — the title stays put and aligned with the
+   description/content column rather than floating up on its line. */
+.proj-name-wrap { position: relative; display: block; width: fit-content; margin-left: -8px; font-family: var(--serif); font-size: 28px; font-weight: 800; line-height: 1.35; min-width: 90px; max-width: 100%; }
 .proj-name-wrap::after { content: attr(data-value) ' '; visibility: hidden; white-space: pre; display: block; overflow: hidden; padding: 2px 8px; }
-.proj-name-wrap .ant-input.proj-name { position: absolute; inset: 0; width: 100%; height: 100%; font: inherit; line-height: inherit; padding: 2px 8px; border-radius: 8px; transition: background .12s, box-shadow .12s; }
+.proj-name-wrap .ant-input.proj-name { position: absolute; inset: 0; width: 100%; height: 100%; font: inherit; line-height: inherit; padding: 2px 8px; border-radius: 8px; transition: background .12s, box-shadow .12s; text-overflow: ellipsis; }
 .proj-name-wrap:hover .ant-input.proj-name:not(:focus) { background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
 .proj-name-wrap .ant-input.proj-name:focus { background: #fff; box-shadow: inset 0 0 0 1px var(--accent); }
 .proj-desc { color: var(--muted); padding: 0 0 8px !important; }
@@ -133,7 +137,7 @@ span.crumb-name { padding: 2px 6px; white-space: nowrap; max-width: 260px; overf
    reveals the "hidden input" affordance. */
 .pat-name-wrap { position: relative; display: inline-block; flex: 0 1 auto; font-family: var(--serif); font-size: 16px; font-weight: 700; line-height: 1.5; min-width: 56px; max-width: 340px; }
 .pat-name-wrap::after { content: attr(data-value) ' '; visibility: hidden; white-space: pre; display: block; overflow: hidden; padding: 2px 7px; }
-.pat-name-wrap .ant-input.pat-name { position: absolute; inset: 0; width: 100%; height: 100%; font: inherit; line-height: inherit; padding: 2px 7px; border-radius: 6px; transition: background .12s, box-shadow .12s; }
+.pat-name-wrap .ant-input.pat-name { position: absolute; inset: 0; width: 100%; height: 100%; font: inherit; line-height: inherit; padding: 2px 7px; border-radius: 6px; transition: background .12s, box-shadow .12s; text-overflow: ellipsis; }
 /* the hover affordance reads "input field", distinct from the link-tint hover */
 .pat-name-wrap:hover .ant-input.pat-name:not(:focus):not([readonly]) { background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
 .pat-name-wrap .ant-input.pat-name:focus { background: #fff; box-shadow: inset 0 0 0 1px var(--accent); }
@@ -142,6 +146,10 @@ span.crumb-name { padding: 2px 6px; white-space: nowrap; max-width: 260px; overf
 .toolbar .ant-segmented-item-label { display: flex; align-items: center; justify-content: center; }
 .seg-icon { display: flex; align-items: center; justify-content: center; padding: 4px 5px; }
 .seg-icon svg { width: 17px; height: 17px; }
+/* transient (hold-Space) pan: Pan reads active but dashed + tinted, so it's
+   visibly distinct from a Pan mode you clicked to stay in */
+.mode-seg.transient .ant-segmented-item-selected { background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px var(--accent-d); }
+.mode-seg.transient .ant-segmented-item-selected .seg-icon svg { color: var(--accent-d); }
 .toolbar { display: flex; align-items: center; gap: 12px; padding: 7px 16px; background: var(--bg-2); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .tool-view { display: flex; align-items: center; gap: 4px; padding-left: 12px; margin-left: 4px; border-left: 1px solid var(--line); }
 

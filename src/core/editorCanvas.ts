@@ -38,6 +38,7 @@ export interface CanvasController {
   resetInsert(): void;
   escape(): boolean;
   setSpace(v: boolean): void;
+  isSpacePan(): boolean;
   syncView(): void;
   destroy(): void;
 }
@@ -50,12 +51,13 @@ interface Marquee { startU: Point; cur: Point; additive: boolean; base: Set<stri
 interface EndpointDrag { id: string; which: 'head' | 'base'; startU: Point; headAtStart: Point; moved: boolean; }
 
 // Point indicators (heads, bases, spaces) are points: simple filled dots, no
-// tinted halo or outline ring.
+// tinted halo or outline ring. Callers pass a radius already converted to
+// user units (via `pr`) so the dot keeps a fixed on-screen size at any zoom.
 function mark(pt: Point, color: string, r = 3.2): string {
-  return `<circle cx="${round(pt.x)}" cy="${round(pt.y)}" r="${r}" fill="${color}"/>`;
+  return `<circle cx="${round(pt.x)}" cy="${round(pt.y)}" r="${round(r)}" fill="${color}"/>`;
 }
 function link(a: Point, b: Point, color: string, dash = '4 3'): string {
-  return `<line x1="${round(a.x)}" y1="${round(a.y)}" x2="${round(b.x)}" y2="${round(b.y)}" stroke="${color}" stroke-width="1.5" stroke-dasharray="${dash}" opacity="0.85"/>`;
+  return `<line x1="${round(a.x)}" y1="${round(a.y)}" x2="${round(b.x)}" y2="${round(b.y)}" stroke="${color}" stroke-width="1.5" stroke-dasharray="${dash}" opacity="0.85" vector-effect="non-scaling-stroke"/>`;
 }
 
 export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: () => void } = {}): CanvasController {
@@ -76,6 +78,11 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
   let endpointDrag: EndpointDrag | null = null;
   let lastU: Point = { x: 0, y: 0 };
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
+
+  // Convert a desired on-screen pixel radius into user-space units for the
+  // current zoom, so overlay dots (heads, bases, spaces, handles) stay the same
+  // size on screen no matter how far you've zoomed in or out.
+  const pr = (px: number): number => px / view.scale;
 
   const pat = () => store.currentPattern();
   const stitches = (): Stitch[] => { const p = pat(); return p ? p.stitches : []; };
@@ -186,8 +193,8 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
         handles += handle(st.id, 'base', { x: st.x, y: st.y }, SPACE);
         handles += handle(st.id, 'head', head, SELECT);
       } else {
-        out += mark({ x: st.x, y: st.y }, SPACE, 3.4);
-        out += mark(head, SELECT, 3.4);
+        out += mark({ x: st.x, y: st.y }, SPACE, pr(3.4));
+        out += mark(head, SELECT, pr(3.4));
       }
     }
     out += '</g>';
@@ -195,8 +202,8 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
   }
   function handle(id: string, which: 'head' | 'base', pt: Point, color: string): string {
     return `<g class="handle" data-id="${id}" data-handle="${which}">`
-      + `<circle cx="${round(pt.x)}" cy="${round(pt.y)}" r="9" fill="transparent" pointer-events="all"/>`
-      + mark(pt, color, 3.4) + '</g>';
+      + `<circle cx="${round(pt.x)}" cy="${round(pt.y)}" r="${round(pr(9))}" fill="transparent" pointer-events="all"/>`
+      + mark(pt, color, pr(3.4)) + '</g>';
   }
 
   function clearCursor(): void { cursorLayer.innerHTML = ''; }
@@ -222,7 +229,7 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
     let out = '';
     for (const sp of spacesForRound(stitches(), activeRound())) {
       const isHit = !!emphasis && emphasis.kind === 'space' && emphasis.ids[0] === sp.ids[0] && emphasis.ids[1] === sp.ids[1];
-      out += `<circle cx="${round(sp.point.x)}" cy="${round(sp.point.y)}" r="${isHit ? 5 : 3}" fill="${SPACE}" fill-opacity="${isHit ? 1 : 0.5}"/>`;
+      out += `<circle cx="${round(sp.point.x)}" cy="${round(sp.point.y)}" r="${round(pr(isHit ? 5 : 3))}" fill="${SPACE}" fill-opacity="${isHit ? 1 : 0.5}"/>`;
     }
     return out;
   }
@@ -256,8 +263,8 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
     if (phase === 'base') {
       const base = pickBase(stitches(), u.x, u.y);
       let out = og + spaceDots(base);
-      out += mark(u, SPACE, 2.6);
-      if (base && base.kind === 'stitch') out += mark(base.point, SPACE, 5);
+      out += mark(u, SPACE, pr(2.6));
+      if (base && base.kind === 'stitch') out += mark(base.point, SPACE, pr(5));
       cursorLayer.innerHTML = out;
       return;
     }
@@ -268,7 +275,7 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
     const rot = (Math.atan2(dx, -dy) * 180) / Math.PI;
     const o = originId ? store.byIdMap().get(originId) : undefined;
     const linkLine = o ? link(topOfStitch(o), bp, ORIGIN) : '';
-    cursorLayer.innerHTML = linkLine + og + ghostStitch(bp, len, rot) + mark(bp, SPACE, 4.5);
+    cursorLayer.innerHTML = linkLine + og + ghostStitch(bp, len, rot) + mark(bp, SPACE, pr(4.5));
   }
 
   function toBaseDesc(hit: BaseHit): Base {
@@ -429,6 +436,13 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
     view.panX = u0x - cxPix / view.scale;
     view.panY = u0y - cyPix / view.scale;
     applyViewBox();
+    redrawOverlayForZoom();
+  }
+
+  // Overlay dots are sized in user units via `pr`, so after a zoom they must be
+  // re-emitted at the new scale. Only worth it when something is overlaid.
+  function redrawOverlayForZoom(): void {
+    if (store.selection.size || mode === 'insert') scheduleRender();
   }
 
   const onLeave = () => { if (!marquee && !drag && !panning) clearCursor(); };
@@ -463,8 +477,8 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
     render,
     invalidate: scheduleRender,
     fit,
-    zoomIn: () => { view.scale = clamp(view.scale * 1.2, 0.15, 9); applyViewBox(); },
-    zoomOut: () => { view.scale = clamp(view.scale / 1.2, 0.15, 9); applyViewBox(); },
+    zoomIn: () => { view.scale = clamp(view.scale * 1.2, 0.15, 9); applyViewBox(); redrawOverlayForZoom(); },
+    zoomOut: () => { view.scale = clamp(view.scale / 1.2, 0.15, 9); applyViewBox(); redrawOverlayForZoom(); },
     getMode: () => mode,
     setMode(m: Mode) {
       if (m === mode) return;
@@ -488,7 +502,12 @@ export function initCanvas(store: Store, svg: SVGSVGElement, opts: { onChange?: 
       this.setMode('select');
       return true;
     },
-    setSpace(v: boolean) { spaceDown = v; applyCursor(); },
+    setSpace(v: boolean) {
+      if (spaceDown === v) return;
+      spaceDown = v; applyCursor();
+      onChange(); // let the toolbar reflect transient (hold-space) pan
+    },
+    isSpacePan: () => spaceDown,
     syncView() { const p = pat(); if (p) view = { ...p.view }; applyViewBox(); },
     destroy() {
       try { ro.disconnect(); } catch { /* gone */ }

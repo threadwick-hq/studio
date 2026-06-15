@@ -30,11 +30,13 @@ export interface StitchDef {
 export const STITCHES: Record<StitchType, StitchDef> = {
   ch: {
     name: 'Chain', abbr: 'ch', kind: 'stitch',
-    // An open oval lying ALONG the flow between stitches. The anchor (0,0) is the
-    // connection point (sits on the origin's head); a buffer leaves a gap so the
-    // oval doesn't overlay the origin. Near end = base, far end = head.
+    // An open oval lying ACROSS the flow between stitches — the chain symbol is
+    // shown sideways (long axis perpendicular to base->head), unlike post
+    // stitches that stand up along it. The anchor (0,0) is the connection point
+    // (sits on the origin's head); a buffer leaves a gap so the oval doesn't
+    // overlay the origin. Near end = base, far end = head.
     build: () => {
-      const B = 6, ry = 8.5, rx = 4.6;
+      const B = 6, rx = 9, ry = 5;
       return { shapes: [{ k: 'ellipse', cx: 0, cy: -(B + ry), rx, ry }], height: B + 2 * ry, head: { x: 0, y: -(B + 2 * ry) } };
     },
   },

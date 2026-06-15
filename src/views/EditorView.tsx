@@ -27,7 +27,7 @@ const KEY_TO_TYPE: Record<string, StitchType> = Object.fromEntries(
   Object.entries(STITCH_KEYS).map(([t, k]) => [k as string, t as StitchType]),
 );
 
-interface Chrome { mode: Mode; armed: StitchType; phase: 'base' | 'head'; nextId: string | null; }
+interface Chrome { mode: Mode; armed: StitchType; phase: 'base' | 'head'; nextId: string | null; spacePan: boolean; }
 
 export function EditorView() {
   const s = useStore();
@@ -36,7 +36,7 @@ export function EditorView() {
   const ver = s.currentVersion();
   const readOnly = !ver || ver.status !== 'draft'; // only draft versions are editable
   const ctrl = useRef<CanvasController | null>(null);
-  const [chrome, setChrome] = useState<Chrome>({ mode: 'select', armed: 'dc', phase: 'base', nextId: null });
+  const [chrome, setChrome] = useState<Chrome>({ mode: 'select', armed: 'dc', phase: 'base', nextId: null, spacePan: false });
   const [help, setHelp] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [rename, setRename] = useState<{ id: string; name: string } | null>(null);
@@ -44,7 +44,7 @@ export function EditorView() {
 
   const sync = () => {
     const c = ctrl.current; if (!c) return;
-    setChrome({ mode: c.getMode(), armed: c.getArmed(), phase: c.getPhase(), nextId: c.getNextStitchId() });
+    setChrome({ mode: c.getMode(), armed: c.getArmed(), phase: c.getPhase(), nextId: c.getNextStitchId(), spacePan: c.isSpacePan() });
   };
 
   // keyboard, scoped to the editor
@@ -101,7 +101,7 @@ export function EditorView() {
           { title: (
             <span className="crumb-leaf">
               <span className="pat-name-wrap" data-value={pat.name}>
-                <Input variant="borderless" className={'pat-name' + (isPlaceholderName(pat.name) ? ' name-placeholder' : '')} value={pat.name} readOnly={readOnly} onChange={(e) => s.renamePattern(pat.id, e.target.value)} />
+                <Input variant="borderless" className={'pat-name' + (isPlaceholderName(pat.name) ? ' name-placeholder' : '')} value={pat.name} readOnly={readOnly} onChange={(e) => s.renamePattern(pat.id, e.target.value)} onPressEnter={(e) => e.currentTarget.blur()} />
               </span>
               <span className="badge">Granny square</span>
             </span>
@@ -120,11 +120,16 @@ export function EditorView() {
       </TopBarSlot>
 
       <div className="toolbar">
-        <Segmented value={chrome.mode === 'insert' && readOnly ? 'select' : chrome.mode} onChange={(v) => ctrl.current?.setMode(v as Mode)}
+        {/* while Space is held the canvas pans transiently; show Pan as active
+            but dashed (.transient) so it's clearly different from a Pan you
+            clicked to stay in */}
+        <Segmented className={'mode-seg' + (chrome.spacePan ? ' transient' : '')}
+          value={chrome.spacePan ? 'pan' : (chrome.mode === 'insert' && readOnly ? 'select' : chrome.mode)}
+          onChange={(v) => ctrl.current?.setMode(v as Mode)}
           options={[
             { label: (<Tooltip title="Select (V)"><span className="seg-icon" aria-label="Select"><SelectModeIcon /></span></Tooltip>), value: 'select' },
             ...(readOnly ? [] : [{ label: (<Tooltip title="Insert (I)"><span className="seg-icon" aria-label="Insert"><InsertModeIcon /></span></Tooltip>), value: 'insert' }]),
-            { label: (<Tooltip title="Pan (P)"><span className="seg-icon" aria-label="Pan"><PanModeIcon /></span></Tooltip>), value: 'pan' },
+            { label: (<Tooltip title="Pan (P) · or hold Space"><span className="seg-icon" aria-label="Pan"><PanModeIcon /></span></Tooltip>), value: 'pan' },
           ]} />
         <div className="grow" />
         {!readOnly && <Tooltip title="Fan the current row out evenly"><Button size="small" onClick={() => s.evenRound(pat.activeRound)}>Even out row</Button></Tooltip>}

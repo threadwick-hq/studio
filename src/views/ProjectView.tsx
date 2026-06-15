@@ -90,7 +90,7 @@ export function ProjectView() {
 
       <div className="page">
         <span className="proj-name-wrap" data-value={prj.name}>
-          <Input variant="borderless" className={'proj-name' + (isPlaceholderName(prj.name) ? ' name-placeholder' : '')} value={prj.name} onChange={(e) => s.renameProject(prj.id, e.target.value)} />
+          <Input variant="borderless" className={'proj-name' + (isPlaceholderName(prj.name) ? ' name-placeholder' : '')} value={prj.name} onChange={(e) => s.renameProject(prj.id, e.target.value)} onPressEnter={(e) => e.currentTarget.blur()} />
         </span>
         <Input.TextArea variant="borderless" className="proj-desc" autoSize value={prj.description} placeholder="Add a description…" onChange={(e) => s.updateProject(prj.id, { description: e.target.value })} />
 
