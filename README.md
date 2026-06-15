@@ -185,4 +185,14 @@ double-click Edit mode, more pattern types, and richer PDF layouts.
 
 ## License
 
-MIT
+Copyright (C) 2026 Eiluviann
+
+threadwick studio is free software: you can redistribute it and/or modify it
+under the terms of the **GNU Affero General Public License** as published by the
+Free Software Foundation, either version 3 of the License, or (at your option)
+any later version. See [`LICENSE`](LICENSE) for the full text.
+
+It is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE. As a network-served application, anyone running a modified version must
+offer its complete source to that version's users (AGPL §13).
