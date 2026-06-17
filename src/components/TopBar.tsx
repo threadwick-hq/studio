@@ -1,7 +1,7 @@
 import { Suspense, createContext, lazy, useContext, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
-import { Logo } from '../Logo';
+import { StudioLogo } from '@threadwick/core/brand';
 import { cloudEnabled } from '../cloud/config';
 
 // Loaded lazily, and only when cloud is configured, so a build with no Supabase
@@ -20,7 +20,7 @@ export function TopBar({ children }: { children?: ReactNode }) {
     <SlotContext.Provider value={slot}>
       <header className="topbar">
         <div className="brand">
-          <Logo className="brand-mark" size={34} />
+          <StudioLogo size={34} />
           <span className="brand-lockup">
             <span className="brand-name">threadwick</span>
             <span className="brand-sub">studio</span>

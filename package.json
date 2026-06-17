@@ -6,7 +6,9 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && eslint . && vite build",
+    "predev": "node scripts/gen-favicon.mjs",
+    "gen:favicon": "node scripts/gen-favicon.mjs",
+    "build": "npm run gen:favicon && tsc --noEmit && eslint . && vite build",
     "preview": "vite preview --host --port 8080",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
