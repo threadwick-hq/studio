@@ -3,13 +3,12 @@ name: Prune merged branches
 # Deletes branches that are fully merged into the default branch (0 commits ahead),
 # after a 7-day grace window. Branches with any unmerged work are always kept.
 # Runs daily, or on demand from the Actions tab.
+# Requires an org Actions secret PRUNE_TOKEN: a fine-grained PAT with Contents:write
+# on the threadwick-hq repos (the org disables write for the default GITHUB_TOKEN).
 on:
   schedule:
     - cron: '0 4 * * *'
   workflow_dispatch:
-
-permissions:
-  contents: write
 
 jobs:
   prune:
@@ -18,6 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.PRUNE_TOKEN }}
       - name: Delete merged branches
         env:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
