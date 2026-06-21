@@ -9,6 +9,10 @@ on:
   schedule:
     - cron: '0 4 * * *'
   workflow_dispatch:
+    inputs:
+      min_age_days:
+        description: 'Delete merged branches older than this many days (0 = all merged)'
+        default: '7'
 
 jobs:
   prune:
@@ -21,7 +25,7 @@ jobs:
       - name: Delete merged branches
         env:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          MIN_AGE_DAYS: '7'
+          MIN_AGE_DAYS: ${{ inputs.min_age_days || '7' }}
         run: |
           git fetch --quiet origin '+refs/heads/*:refs/remotes/origin/*'
           now=$(date +%s)
